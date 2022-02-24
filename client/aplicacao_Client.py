@@ -15,7 +15,7 @@ from http import client, server
 from enlace_Client import *
 import time
 import numpy as np
-
+from random import randint, choice
 # voce deverá descomentar e configurar a porta com através da qual ira fazer comunicaçao
 #   para saber a sua porta, execute no terminal :
 #   python -m serial.tools.list_ports
@@ -26,12 +26,39 @@ import numpy as np
 #serialName = "/dev/tty.usbmodem1411" # Mac    (variacao de)
 serialName = "COM3"                  # Windows(variacao de)
 
+comands = ['00 FF 00 FF', '00 FF FF 00', 'FF', '00', 'FF 00', '00 FF']
+n_comands = randint(10, 30)
 
-def main(n):
+for command in range(n_comands):
+    number = randint(0,5)
+    c = choice(comands)
+    res = ''.join(format(ord(i), '08b') for i in c)
+    print(res)
+
+# n = 0
+#     while n != n_comands:
+#             number = randint(0, 5)
+#             st = comands[number]
+#             res = ''.join(format(ord(i), '08b') for i in st)
+#             n+=1
+#             print(res)
+
+
+'''def main(n):
     try:
         #declaramos um objeto do tipo enlace com o nome "com". Essa é a camada inferior à aplicação. Observe que um parametro
         #para declarar esse objeto é o nome da porta.
         com1 = enlace('COM3')
+
+        comands = ['00 FF 00 FF', '00 FF FF 00', 'FF', '00', 'FF 00', '00 FF']
+        n_comands = randint(10, 30)
+        n = 0
+        while n != n_comands:
+            number = randint(0, 5)
+            st = comands[number]
+            res = ''.join(format(ord(i), '08b') for i in st)
+            n+=1
+            print(res)
         
     
         # Ativa comunicacao. Inicia os threads e a comunicação seiral 
@@ -134,5 +161,5 @@ if __name__ == "__main__":
         print("server")
 
     ready = input("Press ENTER when ready")
-    main(answer)
+    main(answer)'''
     
