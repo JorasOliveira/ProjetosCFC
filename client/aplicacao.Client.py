@@ -10,6 +10,8 @@
 #para acompanhar a execução e identificar erros, construa prints ao longo do código! 
 
 
+from calendar import c
+from http import client, server
 from enlace import *
 import time
 import numpy as np
@@ -25,7 +27,7 @@ import numpy as np
 serialName = "COM3"                  # Windows(variacao de)
 
 
-def main():
+def main(n):
     try:
         #declaramos um objeto do tipo enlace com o nome "com". Essa é a camada inferior à aplicação. Observe que um parametro
         #para declarar esse objeto é o nome da porta.
@@ -40,14 +42,15 @@ def main():
         #aqui você deverá gerar os dados a serem transmitidos. 
         #seus dados a serem transmitidos são uma lista de bytes a serem transmitidos. Gere esta lista com o 
         #nome de txBuffer. Esla sempre irá armazenar os dados a serem enviados.
-        
-        #endereco da imagem a ser lida
-        imgR = "./img/dog.jpg"
-        print("Loading Image: ")
-        print(" - {}".format(imgR))
-        txBuffer = open(imgR, 'rb').read()
 
-        ti = time.time()
+        #-----P1-------
+        #endereco da imagem a ser lida
+        # imgR = "./img/dog.jpg"
+        # print("Loading Image: ")
+        # print(" - {}".format(imgR))
+        # txBuffer = open(imgR, 'rb').read()
+
+        # ti = time.time()
         
     
         #faça aqui uma conferência do tamanho do seu txBuffer, ou seja, quantos bytes serão enviados.
@@ -59,10 +62,14 @@ def main():
         #Cuidado! Apenas trasmitimos arrays de bytes! Nao listas!
   
         #txBuffer = #dados
-        com1.sendData(np.asarray(txBuffer))
+
+        # com1.sendData(np.asarray(txBuffer))
+
         # A camada enlace possui uma camada inferior, TX possui um método para conhecermos o status da transmissão
         # Tente entender como esse método funciona e o que ele retorna
-        txSize = com1.tx.getStatus()
+
+        # txSize = com1.tx.getStatus()
+
         #Agora vamos iniciar a recepção dos dados. Se algo chegou ao RX, deve estar automaticamente guardado
         #Observe o que faz a rotina dentro do thread RX
         #print um aviso de que a recepção vai começar.
@@ -71,45 +78,61 @@ def main():
         #Será que todos os bytes enviados estão realmente guardadas? Será que conseguimos verificar?
         #Veja o que faz a funcao do enlaceRX  getBufferLen
       
+        #-----P1-------
         #acesso aos bytes recebidos
-        txLen = len(txBuffer)
-        rxBuffer, nRx = com1.getData(txLen)
-        print("recebeu {}" .format(rxBuffer))
+        # txLen = len(txBuffer)
+        # rxBuffer, nRx = com1.getData(txLen)
+        # print("recebeu {}" .format(rxBuffer))
 
         #carregando o endereco e nome da copia, e salvando         
-        imgW = "./img/copyDog.jpg"
-        print("Receving DATA: ")
-        print(" -{}".format(imgW))
-        f = open(imgW, 'wb')
-        f.write(rxBuffer)
+        # imgW = "./img/copyDog.jpg"
+        # print("Receving DATA: ")
+        # print(" -{}".format(imgW))
+        # f = open(imgW, 'wb')
+        # f.write(rxBuffer)
 
-        tf = time.time()
+        # tf = time.time()
 
         #fechando o leitor de imagem
-        f.close()  
+        # f.close()  
     
         # Encerra comunicação
         
-        print("checking size: ")
-        print("original: ")
-        print(txLen)
-        print("copy: ")
-        print(len(rxBuffer))
+        # print("checking size: ")
+        # print("original: ")
+        # print(txLen)
+        # print("copy: ")
+        # print(len(rxBuffer))
 
-        print("Transfer Time: ")
-        print(tf - ti)
+        # print("Transfer Time: ")
+        # print(tf - ti)
 
-        print("-------------------------")
-        print("Comunicação encerrada")
-        print("-------------------------")
-        com1.disable()
-        
+        # print("-------------------------")
+        # print("Comunicação encerrada")
+        # com1.disable()
+
+        #--------------
+
     except Exception as erro:
         print("ops! :-\\")
         print(erro)
         com1.disable()
+
+
         
 
     #so roda o main quando for executado do terminal ... se for chamado dentro de outro modulo nao roda
 if __name__ == "__main__":
-    main()
+    #main()
+
+    answer = int(input("Client(1) or Server(0)?"))
+
+    if answer is 1:
+        print("client")
+
+    if answer is not 1:
+        print("server")
+
+    ready = input("Press ENTER when ready")
+    main(answer)
+    
