@@ -15,6 +15,7 @@ from http import client, server
 from enlace_Server import *
 import time
 import numpy as np
+from random import randint, choice
 
 # voce deverá descomentar e configurar a porta com através da qual ira fazer comunicaçao
 #   para saber a sua porta, execute no terminal :
@@ -27,11 +28,11 @@ import numpy as np
 serialName = "COM3"                  # Windows(variacao de)
 
 
-def main(n):
+def main():
     try:
         #declaramos um objeto do tipo enlace com o nome "com". Essa é a camada inferior à aplicação. Observe que um parametro
         #para declarar esse objeto é o nome da porta.
-        com1 = enlace('COM3')
+        com1 = enlace('COM4')
         
     
         # Ativa comunicacao. Inicia os threads e a comunicação seiral 
@@ -51,6 +52,24 @@ def main(n):
         # txBuffer = open(imgR, 'rb').read()
 
         # ti = time.time()
+
+        #-----P2-----
+        comands = ['00 FF 00 FF', '00 FF FF 00', 'FF', '00', 'FF 00', '00 FF']
+        n_comands = randint(10, 30)
+        txBuffer = (n_comands).to_bytes(1,byteorder='big')
+        print("mandando {} commandos".format(n_comands))
+        com1.sendData(np.asarray(txBuffer))
+
+        # 2- Passar o comando em si
+        for command in range(n_comands):
+            c = choice(comands)
+            # txBuffer = bytes(c, 'UTF-8')
+            txBuffer = c.encode(encoding = 'UTF-8')
+            print("mandando commando {}".format(command))
+            print(txBuffer)
+            com1.sendData(np.asarray(txBuffer))
+
+
         
     
         #faça aqui uma conferência do tamanho do seu txBuffer, ou seja, quantos bytes serão enviados.
@@ -68,7 +87,7 @@ def main(n):
         # A camada enlace possui uma camada inferior, TX possui um método para conhecermos o status da transmissão
         # Tente entender como esse método funciona e o que ele retorna
 
-        # txSize = com1.tx.getStatus()
+        txSize = com1.tx.getStatus()
 
         #Agora vamos iniciar a recepção dos dados. Se algo chegou ao RX, deve estar automaticamente guardado
         #Observe o que faz a rotina dentro do thread RX
@@ -77,6 +96,19 @@ def main(n):
       
         #Será que todos os bytes enviados estão realmente guardadas? Será que conseguimos verificar?
         #Veja o que faz a funcao do enlaceRX  getBufferLen
+
+        txLen = 1
+        rxBuffer, nRx = com1.getData(txLen)
+        rxBuffer = int.from_bytes(rxBuffer, byteorder='big')
+        print("recebeu n_commands: {}" .format(rxBuffer))
+
+        commands = []
+        for i in range(rxBuffer):
+            rxBuffer, nRx = com1.getData(4)
+            commands.append(rxBuffer)
+            print("recebeu commando {}:" .format(i))
+            print(rxBuffer)
+
       
         #-----P1-------
         #acesso aos bytes recebidos
@@ -123,16 +155,4 @@ def main(n):
 
     #so roda o main quando for executado do terminal ... se for chamado dentro de outro modulo nao roda
 if __name__ == "__main__":
-    #main()
-
-    answer = int(input("Client(1) or Server(0)?"))
-
-    if answer is 1:
-        print("client")
-
-    if answer is not 1:
-        print("server")
-
-    ready = input("Press ENTER when ready")
-    main(answer)
-    
+    main()
