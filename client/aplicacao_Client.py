@@ -24,43 +24,14 @@ from random import randint, choice
 #use uma das 3 opcoes para atribuir à variável a porta usada
 #serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
 #serialName = "/dev/tty.usbmodem1411" # Mac    (variacao de)
-serialName = "COM3"                  # Windows(variacao de)
+serialName = "COM4"                  # Windows(variacao de)
 
-comands = ['00 FF 00 FF', '00 FF FF 00', 'FF', '00', 'FF 00', '00 FF']
-n_comands = randint(10, 30)
-
-for command in range(n_comands):
-    number = randint(0,5)
-    c = choice(comands)
-    res = ''.join(format(ord(i), '08b') for i in c)
-    print(res)
-
-# n = 0
-#     while n != n_comands:
-#             number = randint(0, 5)
-#             st = comands[number]
-#             res = ''.join(format(ord(i), '08b') for i in st)
-#             n+=1
-#             print(res)
-
-
-'''def main(n):
+def main():
     try:
         #declaramos um objeto do tipo enlace com o nome "com". Essa é a camada inferior à aplicação. Observe que um parametro
         #para declarar esse objeto é o nome da porta.
-        com1 = enlace('COM3')
-
-        comands = ['00 FF 00 FF', '00 FF FF 00', 'FF', '00', 'FF 00', '00 FF']
-        n_comands = randint(10, 30)
-        n = 0
-        while n != n_comands:
-            number = randint(0, 5)
-            st = comands[number]
-            res = ''.join(format(ord(i), '08b') for i in st)
-            n+=1
-            print(res)
+        com1 = enlace('COM4')
         
-    
         # Ativa comunicacao. Inicia os threads e a comunicação seiral 
         com1.enable()
         #Se chegamos até aqui, a comunicação foi aberta com sucesso. Faça um print para informar.
@@ -69,6 +40,65 @@ for command in range(n_comands):
         #aqui você deverá gerar os dados a serem transmitidos. 
         #seus dados a serem transmitidos são uma lista de bytes a serem transmitidos. Gere esta lista com o 
         #nome de txBuffer. Esla sempre irá armazenar os dados a serem enviados.
+
+        #-----P2-----
+
+        # 1- Passando a quantidade de comandos que o server ira passar
+
+        comands = ['00 FF 00 FF', '00 FF FF 00', 'FF', '00', 'FF 00', '00 FF']
+        n_comands = randint(10, 30)
+        txBuffer = (n_comands).to_bytes(2,byteorder='big')
+        com1.sendData(np.asarray(txBuffer))
+
+        # 2- Passar o comando em si
+        for command in range(n_comands):
+            c = choice(comands)
+            txBuffer = bytes(c, 'UTF-8')
+            print(txBuffer)
+            com1.sendData(np.asarray(txBuffer))
+
+
+        # 3- Ficar ouvindo ate receber uma resposta ou ate o time-out de 10 seg
+
+        
+
+
+        
+
+
+        # for command in range(n_comands):
+        #     c = choice(comands)
+        #     res = ''.join(format(ord(i), '08b') for i in c)
+
+
+        # for command in range(n_comands):
+        #     c = choice(comands)
+        #     res = ''.join(format(ord(i), '08b') for i in c)
+
+        #     txBuffer = res
+
+        #     com1.sendData(np.asarray(txBuffer))
+
+        #     txLen = len(txBuffer)
+
+        #     rxBuffer, nRx = com1.getData(txLen)
+
+        #     if rxBuffer is not None:
+        #         contador += 1
+        
+        # print("-------------------------")
+        # print("Comunicação encerrada")
+        # com1.disable()
+        # print("-------------------------")
+
+        # if contador == n_comands:
+        #     print("DEU CERTO A TRANSMISSAO")
+        # else:
+        #     print('DEU RUIM   :/')
+        
+
+
+
 
         #-----P1-------
         #endereco da imagem a ser lida
@@ -150,16 +180,16 @@ for command in range(n_comands):
 
     #so roda o main quando for executado do terminal ... se for chamado dentro de outro modulo nao roda
 if __name__ == "__main__":
-    #main()
+    main()
 
-    answer = int(input("Client(1) or Server(0)?"))
+    # answer = int(input("Client(1) or Server(0)?"))
 
-    if answer is 1:
-        print("client")
+    # if answer is 1:
+    #     print("client")
 
-    if answer is not 1:
-        print("server")
+    # if answer is not 1:
+    #     print("server")
 
-    ready = input("Press ENTER when ready")
-    main(answer)'''
+    # ready = input("Press ENTER when ready")
+    # main(answer)
     
