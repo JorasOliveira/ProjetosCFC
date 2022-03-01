@@ -45,70 +45,61 @@ def main():
 
         # 1- Passando a quantidade de comandos que o server ira passar
 
-        comands = ['00 FF 00 FF', '00 FF FF 00', 'FF', '00', 'FF 00', '00 FF']
-        n_comands = randint(10, 30)
-        txBuffer = (n_comands).to_bytes(2,byteorder='big')
+        #mandando o numero de comandos
+        commands = ['00 FF 00 FF', '00 FF FF 00', 'FF', '00', 'FF 00', '00 FF']
+        n_commands = randint(10, 30)
+        txBuffer = (n_commands).to_bytes(1,byteorder='big')
+        print("mandando {} commandos".format(n_commands))
         com1.sendData(np.asarray(txBuffer))
 
         # 2- Passar o comando em si
-        for command in range(n_comands):
-            c = choice(comands)
-            txBuffer = bytes(c, 'UTF-8')
+
+
+        t_i= time.time()   #tempo inicial p/ timeout
+        #mandando os tamanhos dos comandos
+        sent_commands = []
+        for command in range(n_commands):
+            c = choice(commands)
+            sent_commands.append(c)
+            txBuffer = len(c).to_bytes(1,byteorder='big')
+            print("mandando tamanho: {}".format(command))
+            print(int.from_bytes(txBuffer, byteorder='big'))
+            com1.sendData(np.asarray(txBuffer))
+
+        #mandando os commandos em si
+        for command in range(n_commands):
+            c = sent_commands.pop(0)
+            # txBuffer = bytes(c, "UTF-8")
+            txBuffer = c.encode(encoding = 'UTF-8')
+            print("mandando commando {}".format(command))
             print(txBuffer)
             com1.sendData(np.asarray(txBuffer))
 
 
         # 3- Ficar ouvindo ate receber uma resposta ou ate o time-out de 10 seg
 
-        
+        delta_time = 0
+        while delta_time < 10:
+            deltaTime = time.time() - t_i
+            print("deltaT: {}".format(deltaTime))
 
+            txLen = 1
+            rxBuffer, nRx = com1.getData(txLen)
+            rxBuffer = int.from_bytes(rxBuffer, byteorder='big')
+            print("recebeu n_commands: {}" .format(rxBuffer))
 
-        
+            # if (rxBuffer - n_commands) is 0:
+            #     print("commandos enviados com sucesso!!")
+            #     com1.disable()
+            #     exit()
+            # else: 
+            #     print("Erro ao receber os commandos") 
+            #     com1.disable()
+            #     exit()
 
-
-        # for command in range(n_comands):
-        #     c = choice(comands)
-        #     res = ''.join(format(ord(i), '08b') for i in c)
-
-
-        # for command in range(n_comands):
-        #     c = choice(comands)
-        #     res = ''.join(format(ord(i), '08b') for i in c)
-
-        #     txBuffer = res
-
-        #     com1.sendData(np.asarray(txBuffer))
-
-        #     txLen = len(txBuffer)
-
-        #     rxBuffer, nRx = com1.getData(txLen)
-
-        #     if rxBuffer is not None:
-        #         contador += 1
-        
-        # print("-------------------------")
-        # print("Comunicação encerrada")
-        # com1.disable()
-        # print("-------------------------")
-
-        # if contador == n_comands:
-        #     print("DEU CERTO A TRANSMISSAO")
-        # else:
-        #     print('DEU RUIM   :/')
-        
-
-
-
-
-        #-----P1-------
-        #endereco da imagem a ser lida
-        # imgR = "./img/dog.jpg"
-        # print("Loading Image: ")
-        # print(" - {}".format(imgR))
-        # txBuffer = open(imgR, 'rb').read()
-
-        # ti = time.time()
-        
+        print("TimeOut :(")
+        com1.disable()
+        exit()
     
         #faça aqui uma conferência do tamanho do seu txBuffer, ou seja, quantos bytes serão enviados.
        
@@ -134,39 +125,6 @@ def main():
       
         #Será que todos os bytes enviados estão realmente guardadas? Será que conseguimos verificar?
         #Veja o que faz a funcao do enlaceRX  getBufferLen
-      
-        #-----P1-------
-        #acesso aos bytes recebidos
-        # txLen = len(txBuffer)
-        # rxBuffer, nRx = com1.getData(txLen)
-        # print("recebeu {}" .format(rxBuffer))
-
-        #carregando o endereco e nome da copia, e salvando         
-        # imgW = "./img/copyDog.jpg"
-        # print("Receving DATA: ")
-        # print(" -{}".format(imgW))
-        # f = open(imgW, 'wb')
-        # f.write(rxBuffer)
-
-        # tf = time.time()
-
-        #fechando o leitor de imagem
-        # f.close()  
-    
-        # Encerra comunicação
-        
-        # print("checking size: ")
-        # print("original: ")
-        # print(txLen)
-        # print("copy: ")
-        # print(len(rxBuffer))
-
-        # print("Transfer Time: ")
-        # print(tf - ti)
-
-        # print("-------------------------")
-        # print("Comunicação encerrada")
-        # com1.disable()
 
         #--------------
 

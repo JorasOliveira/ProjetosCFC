@@ -10,6 +10,7 @@
 #para acompanhar a execução e identificar erros, construa prints ao longo do código! 
 
 
+from base64 import decode
 from calendar import c
 from http import client, server
 from enlace_Server import *
@@ -44,34 +45,25 @@ def main():
         #seus dados a serem transmitidos são uma lista de bytes a serem transmitidos. Gere esta lista com o 
         #nome de txBuffer. Esla sempre irá armazenar os dados a serem enviados.
 
-        #-----P1-------
-        #endereco da imagem a ser lida
-        # imgR = "./img/dog.jpg"
-        # print("Loading Image: ")
-        # print(" - {}".format(imgR))
-        # txBuffer = open(imgR, 'rb').read()
-
-        # ti = time.time()
-
         #-----P2-----
-        comands = ['00 FF 00 FF', '00 FF FF 00', 'FF', '00', 'FF 00', '00 FF']
-        n_comands = randint(10, 30)
-        txBuffer = (n_comands).to_bytes(1,byteorder='big')
-        print("mandando {} commandos".format(n_comands))
-        com1.sendData(np.asarray(txBuffer))
 
-        # 2- Passar o comando em si
-        for command in range(n_comands):
-            c = choice(comands)
-            # txBuffer = bytes(c, 'UTF-8')
-            txBuffer = c.encode(encoding = 'UTF-8')
-            print("mandando commando {}".format(command))
-            print(txBuffer)
-            com1.sendData(np.asarray(txBuffer))
+        #recebendo o numero de comandos"
+        txLen = 1
+        rxBuffer, nRx = com1.getData(txLen)
+        rxBuffer = int.from_bytes(rxBuffer, byteorder='big')
+        print("recebeu n_commands: {}" .format(rxBuffer))
+
+        #recebendo os tamanhos dos commandos:
+        commands_size = []
+        for i in range(rxBuffer):
+            rxBuffer, nRx = com1.getData(1)
+            rxBuffer = int.from_bytes(rxBuffer, byteorder='big')
+            commands_size.append(rxBuffer)
+            print("recebeu tamanho {}:" .format(i))
+            print(rxBuffer)
 
 
-        
-    
+
         #faça aqui uma conferência do tamanho do seu txBuffer, ou seja, quantos bytes serão enviados.
        
             
@@ -97,53 +89,23 @@ def main():
         #Será que todos os bytes enviados estão realmente guardadas? Será que conseguimos verificar?
         #Veja o que faz a funcao do enlaceRX  getBufferLen
 
-        txLen = 1
-        rxBuffer, nRx = com1.getData(txLen)
-        rxBuffer = int.from_bytes(rxBuffer, byteorder='big')
-        print("recebeu n_commands: {}" .format(rxBuffer))
-
+        #recebendo os commandos em si:
         commands = []
-        for i in range(rxBuffer):
-            rxBuffer, nRx = com1.getData(4)
+        for i in commands_size:
+            rxBuffer, nRx = com1.getData(i)
+            rxBuffer = decode(rxBuffer, "UTF-8")
             commands.append(rxBuffer)
             print("recebeu commando {}:" .format(i))
             print(rxBuffer)
 
-      
-        #-----P1-------
-        #acesso aos bytes recebidos
-        # txLen = len(txBuffer)
-        # rxBuffer, nRx = com1.getData(txLen)
-        # print("recebeu {}" .format(rxBuffer))
+        #enviando quantos comandos foram recebidos:
+        txBuffer = (len(commands_size)).to_bytes(1,byteorder='big')
+        print("mandando {} commandos".format(len(commands_size)))
+        com1.sendData(np.asarray(txBuffer))
 
-        #carregando o endereco e nome da copia, e salvando         
-        # imgW = "./img/copyDog.jpg"
-        # print("Receving DATA: ")
-        # print(" -{}".format(imgW))
-        # f = open(imgW, 'wb')
-        # f.write(rxBuffer)
-
-        # tf = time.time()
-
-        #fechando o leitor de imagem
-        # f.close()  
-    
-        # Encerra comunicação
-        
-        # print("checking size: ")
-        # print("original: ")
-        # print(txLen)
-        # print("copy: ")
-        # print(len(rxBuffer))
-
-        # print("Transfer Time: ")
-        # print(tf - ti)
-
-        # print("-------------------------")
-        # print("Comunicação encerrada")
-        # com1.disable()
-
-        #--------------
+        print("-------------------------")
+        print("Comunicação encerrada")
+        com1.disable()
 
     except Exception as erro:
         print("ops! :-\\")
