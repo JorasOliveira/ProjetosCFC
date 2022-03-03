@@ -13,6 +13,7 @@
 from base64 import decode
 from calendar import c
 from http import client, server
+from operator import index, indexOf
 from enlace_Server import *
 import time
 import numpy as np
@@ -48,19 +49,26 @@ def main():
         #-----P2-----
 
         #recebendo o numero de comandos"
+        # print("ouvindo")
+
+
         txLen = 1
         rxBuffer, nRx = com1.getData(txLen)
         rxBuffer = int.from_bytes(rxBuffer, byteorder='big')
-        print("recebeu n_commands: {}" .format(rxBuffer))
+        number_commands = rxBuffer
+        print("recebeu n_commands: {}" .format(number_commands))
+        time.sleep(0.1)
 
         #recebendo os tamanhos dos commandos:
         commands_size = []
-        for i in range(rxBuffer):
+        for i in range(number_commands):
+            time.sleep(0.1)
             rxBuffer, nRx = com1.getData(1)
             rxBuffer = int.from_bytes(rxBuffer, byteorder='big')
             commands_size.append(rxBuffer)
             print("recebeu tamanho {}:" .format(i))
             print(rxBuffer)
+
 
 
 
@@ -92,11 +100,13 @@ def main():
         #recebendo os commandos em si:
         commands = []
         for i in commands_size:
+            time.sleep(0.1)
             rxBuffer, nRx = com1.getData(i)
-            rxBuffer = decode(rxBuffer, "UTF-8")
+            print("here")
             commands.append(rxBuffer)
-            print("recebeu commando {}:" .format(i))
+            print("recebeu commando {}:" .format(commands_size.index(i)))
             print(rxBuffer)
+            
 
         #enviando quantos comandos foram recebidos:
         txBuffer = (len(commands_size)).to_bytes(1,byteorder='big')

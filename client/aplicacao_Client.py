@@ -44,21 +44,23 @@ def main():
         #-----P2-----
 
         # 1- Passando a quantidade de comandos que o server ira passar
-
+        t_i= time.time()   #tempo inicial p/ timeout
         #mandando o numero de comandos
         commands = ['00 FF 00 FF', '00 FF FF 00', 'FF', '00', 'FF 00', '00 FF']
         n_commands = randint(10, 30)
         txBuffer = (n_commands).to_bytes(1,byteorder='big')
         print("mandando {} commandos".format(n_commands))
+        time.sleep(0.1)
         com1.sendData(np.asarray(txBuffer))
 
         # 2- Passar o comando em si
 
 
-        t_i= time.time()   #tempo inicial p/ timeout
+        
         #mandando os tamanhos dos comandos
         sent_commands = []
         for command in range(n_commands):
+            time.sleep(0.1)
             c = choice(commands)
             sent_commands.append(c)
             txBuffer = len(c).to_bytes(1,byteorder='big')
@@ -68,6 +70,7 @@ def main():
 
         #mandando os commandos em si
         for command in range(n_commands):
+            time.sleep(0.1)
             c = sent_commands.pop(0)
             # txBuffer = bytes(c, "UTF-8")
             txBuffer = c.encode(encoding = 'UTF-8')
@@ -78,28 +81,29 @@ def main():
 
         # 3- Ficar ouvindo ate receber uma resposta ou ate o time-out de 10 seg
 
-        delta_time = 0
-        while delta_time < 10:
-            deltaTime = time.time() - t_i
-            print("deltaT: {}".format(deltaTime))
+        
+        deltaTime = time.time() - t_i
+        print("deltaT: {}".format(deltaTime))
 
-            txLen = 1
-            rxBuffer, nRx = com1.getData(txLen)
-            rxBuffer = int.from_bytes(rxBuffer, byteorder='big')
-            print("recebeu n_commands: {}" .format(rxBuffer))
+        txLen = 1
+        rxBuffer, nRx = com1.getData(txLen)
+        if rxBuffer.isalpha():
+            print("TimeOut :(")
+            com1.disable()
+            exit()
+        rxBuffer = int.from_bytes(rxBuffer, byteorder='big')
+        print("recebeu n_commands: {}" .format(rxBuffer))
 
-            # if (rxBuffer - n_commands) is 0:
-            #     print("commandos enviados com sucesso!!")
-            #     com1.disable()
-            #     exit()
-            # else: 
-            #     print("Erro ao receber os commandos") 
-            #     com1.disable()
-            #     exit()
+        if (rxBuffer - n_commands) == 0:
+            print("commandos enviados com sucesso!!")
+            com1.disable()
+            exit()
+        else: 
+            print("Erro ao enviar os commandos :(") 
+            com1.disable()
+            exit()
 
-        print("TimeOut :(")
-        com1.disable()
-        exit()
+        
     
         #faça aqui uma conferência do tamanho do seu txBuffer, ou seja, quantos bytes serão enviados.
        
