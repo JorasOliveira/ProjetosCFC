@@ -41,12 +41,52 @@ def main():
         #seus dados a serem transmitidos são uma lista de bytes a serem transmitidos. Gere esta lista com o 
         #nome de txBuffer. Esla sempre irá armazenar os dados a serem enviados.
 
+
+        #-----P3-----
+         # 1- mandando o head
+        t_i= time.time()   #tempo inicial p/ timeout
+
+        #compondo o head
+        commands = [0b11, 0b00, 1100, 0b0011, 0b1111, 0b1010]
+
+        '''HEAD: 
+        tipo de mensagem - 1 byte
+        ordem dos pacotes: numero/total - 2 bytes
+        tamanho da payload - 2bytes
+        stuff - 1 byte
+        5 bytes vazios
+
+        TIPOS DE MENSAGEM:
+        HandShake  - a
+        Dados      - b
+        Acknoledge - c
+        FIM        - d
+'''
+
+
+
+        # txBuffer = (n_commands).to_bytes(1,byteorder='big')
+        txBuffer = ""
+        print("mandando {} commandos".format(n_commands))
+
+        #mandando
+        time.sleep(0.1)
+        com1.sendData(np.asarray(txBuffer))
+
+
+
+
+
+
+
+
+
         #-----P2-----
 
         # 1- Passando a quantidade de comandos que o server ira passar
         t_i= time.time()   #tempo inicial p/ timeout
         #mandando o numero de comandos
-        commands = ['00 FF 00 FF', '00 FF FF 00', 'FF', '00', 'FF 00', '00 FF']
+        commands = [0b11, 0b00, 1100, 0b0011, 0b1111, 0b1010]
         n_commands = randint(10, 30)
         txBuffer = (n_commands).to_bytes(1,byteorder='big')
         print("mandando {} commandos".format(n_commands))
@@ -58,25 +98,25 @@ def main():
 
         
         #mandando os tamanhos dos comandos
-        sent_commands = []
-        for command in range(n_commands):
-            time.sleep(0.1)
-            c = choice(commands)
-            sent_commands.append(c)
-            txBuffer = len(c).to_bytes(1,byteorder='big')
-            print("mandando tamanho: {}".format(command))
-            print(int.from_bytes(txBuffer, byteorder='big'))
-            com1.sendData(np.asarray(txBuffer))
+        # sent_commands = []
+        # for command in range(n_commands):
+        #     time.sleep(0.1)
+        #     c = choice(commands)
+        #     sent_commands.append(c)
+        #     txBuffer = len(c).to_bytes(1,byteorder='big')
+        #     print("mandando tamanho: {}".format(command))
+        #     print(int.from_bytes(txBuffer, byteorder='big'))
+        #     com1.sendData(np.asarray(txBuffer))
 
-        #mandando os commandos em si
-        for command in range(n_commands):
-            time.sleep(0.1)
-            c = sent_commands.pop(0)
-            # txBuffer = bytes(c, "UTF-8")
-            txBuffer = c.encode(encoding = 'UTF-8')
-            print("mandando commando {}".format(command))
-            print(txBuffer)
-            com1.sendData(np.asarray(txBuffer))
+        # #mandando os commandos em si
+        # for command in range(n_commands):
+        #     time.sleep(0.1)
+        #     c = sent_commands.pop(0)
+        #     # txBuffer = bytes(c, "UTF-8")
+        #     txBuffer = c.encode(encoding = 'UTF-8')
+        #     print("mandando commando {}".format(command))
+        #     print(txBuffer)
+        #     com1.sendData(np.asarray(txBuffer))
 
 
         # 3- Ficar ouvindo ate receber uma resposta ou ate o time-out de 10 seg
