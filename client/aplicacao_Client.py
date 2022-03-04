@@ -50,10 +50,10 @@ def main():
         commands = [0b11, 0b00, 1100, 0b0011, 0b1111, 0b1010]
 
         '''HEAD: 
-        tipo de mensagem - 1 byte
-        ordem dos pacotes: numero/total - 2 bytes
-        tamanho da payload - 2bytes
-        stuff - 1 byte
+        tipo de mensagem - 1 byte (character)
+        ordem dos pacotes: numero/total - 2 bytes (numero/numero)
+        tamanho da payload - 2bytes (nuemro)
+        stuff - 1 byte (charater?)
         5 bytes vazios
 
         TIPOS DE MENSAGEM:
