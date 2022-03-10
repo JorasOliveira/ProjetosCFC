@@ -10,6 +10,7 @@
 #para acompanhar a execução e identificar erros, construa prints ao longo do código! 
 
 
+from base64 import decode
 from calendar import c
 from http import client, server
 from enlace_Client import *
@@ -47,13 +48,11 @@ def main():
         t_i= time.time()   #tempo inicial p/ timeout
 
         #compondo o head
-        commands = [0b11, 0b00, 1100, 0b0011, 0b1111, 0b1010]
-
         '''HEAD: 
         tipo de mensagem - 1 byte (character)
         ordem dos pacotes: numero/total - 2 bytes (numero/numero)
         tamanho da payload - 2bytes (nuemro)
-        stuff - 1 byte (charater?)
+        stuff - 1 byte (charater?) - ff
         5 bytes vazios
 
         TIPOS DE MENSAGEM:
@@ -61,37 +60,58 @@ def main():
         Dados      - b
         Acknoledge - c
         FIM        - d
-'''
+        '''
 
-
-
+        #head exemplo p/ teste
         # txBuffer = (n_commands).to_bytes(1,byteorder='big')
-        txBuffer = ""
-        print("mandando {} commandos".format(n_commands))
+        # pacote = ""
+        # pacote += 'a' 
+        # pacote += '2' 
+        # pacote += '48' 
+        # pacote += '144' 
+        # pacote += '000'
 
+        #carregando a imagem
+        imgR = "client/img/dog.jpg"
+        print("Loading Image: ")
+        print(" - {}".format(imgR))
+        dog = open(imgR, 'rb').read()
+
+        print(f"a imagem tem  tamanho: {len(dog)}")
+
+        size_of_dog = int(len(dog)/114) + 1
+        print(f"a imagem sera dividida em: {size_of_dog} pacotes")
+
+        #montando o head DO HANDSHAKE:
+        size_bytes = size_of_dog.to_bytes(1, byteorder='big')
+
+        bytes_to_number = int.from_bytes(size_bytes, byteorder='big')
+        print(bytes_to_number)
+
+        zero = (0).to_bytes(1, byteorder='big')
+        a = str.encode('a')
+        pacote = a + zero + size_bytes + zero*7     #0{size_of_dog.to_bytes(1, byteorder='big')}000000'
+        print(pacote)
+        
         #mandando
         time.sleep(0.1)
+        txBuffer = pacote
+        print(txBuffer)
+        time.sleep(0.1)
         com1.sendData(np.asarray(txBuffer))
-
-
-
-
-
-
-
 
 
         #-----P2-----
 
         # 1- Passando a quantidade de comandos que o server ira passar
-        t_i= time.time()   #tempo inicial p/ timeout
+        # t_i= time.time()   #tempo inicial p/ timeout
         #mandando o numero de comandos
-        commands = [0b11, 0b00, 1100, 0b0011, 0b1111, 0b1010]
-        n_commands = randint(10, 30)
-        txBuffer = (n_commands).to_bytes(1,byteorder='big')
-        print("mandando {} commandos".format(n_commands))
-        time.sleep(0.1)
-        com1.sendData(np.asarray(txBuffer))
+        # commands = [0b11, 0b00, 1100, 0b0011, 0b1111, 0b1010]
+        # n_commands = randint(10, 30)
+        # txBuffer = (n_commands).to_bytes(1,byteorder='big')
+        # print("mandando {} commandos".format(n_commands))
+        # time.sleep(0.1)
+        # com1.sendData(np.asarray(txBuffer))
 
         # 2- Passar o comando em si
 
