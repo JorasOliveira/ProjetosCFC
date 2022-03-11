@@ -46,72 +46,177 @@ def main():
         #seus dados a serem transmitidos são uma lista de bytes a serem transmitidos. Gere esta lista com o 
         #nome de txBuffer. Esla sempre irá armazenar os dados a serem enviados.
 
-        #-----P2-----
+        #-----P3-----
+        print("ouvindo head")
 
-        #recebendo o numero de comandos"
-        # print("ouvindo")
+        # Recebeu -- HANDSHAKE
 
-
-        txLen = 1
+        txLen = 10
         rxBuffer, nRx = com1.getData(txLen)
-        rxBuffer = int.from_bytes(rxBuffer, byteorder='big')
-        number_commands = rxBuffer
-        print("recebeu n_commands: {}" .format(number_commands))
+        # rxBuffer = int.from_bytes(rxBuffer, byteorder='big')
+        print("recebeu: {}" .format(rxBuffer))
         time.sleep(0.1)
 
-        #recebendo os tamanhos dos commandos:
-        commands_size = []
-        for i in range(number_commands):
+        index = rxBuffer[0]
+
+        n_pacotes = rxBuffer[1]
+
+        quantidade_pacotes = rxBuffer[2]
+
+        tamanho_payload = rxBuffer[3]
+        
+        print(index)
+        print(n_pacotes)
+        print(quantidade_pacotes)
+        print(tamanho_payload)
+
+        txLen = 4
+        rxBuffer, nRx = com1.getData(txLen)
+        print("EOP: {}" .format(rxBuffer))
+        time.sleep(0.5)
+
+        # ACKNOWLEDGE -- HANDSHAKE -- ENVIAR
+        def acknowledge():
+            head = [30, 0, 0 ,0 ,0, 0, 0 ,0 ,0, 0]
+            eop = [85, 85, 85, 85]
+
+            pacote = head + eop
+
+            txBuffer = pacote
+            print(txBuffer)
             time.sleep(0.1)
-            rxBuffer, nRx = com1.getData(1)
-            rxBuffer = int.from_bytes(rxBuffer, byteorder='big')
-            commands_size.append(rxBuffer)
-            print("recebeu tamanho {}:" .format(i))
-            print(rxBuffer)
+            com1.sendData(np.asarray(txBuffer))
+
+        acknowledge()
+
+
+        #CONSTRUCAO DA IMAGEM
+
+            
+        #HEAD
+        for i in range(quantidade_pacotes):
+            
+            print('ouvindo')
+
+            txLen = 10
+            rxBuffer, nRx = com1.getData(txLen)
+            print("recebeu: {}" .format(rxBuffer))
+            time.sleep(0.5)
+
+            index = rxBuffer[0]
+
+            n_pacotes = rxBuffer[1]
+
+            quantidade_pacotes = rxBuffer[2]
+
+            tamanho_payload = rxBuffer[3]
+
+            resto = rxBuffer[3:-1]
+
+            print("tamanho payload: {}" .format(tamanho_payload))
+            print(list(rxBuffer))
+
+            #Montando a imagem
+            txLen = tamanho_payload
+            rxBuffer, nRx = com1.getData(txLen)
+            imagem = b''
+            print(len(rxBuffer))
+
+            for b in range(len(rxBuffer)):
+
+                imgW = "server/img/copyDog.jpg"
+
+                imagem += bytes(rxBuffer[b])
+                print(imagem)
+
+                print("Receving DATA: ")
+                print(" -{}".format(imgW))
+
+                f = open(imgW, 'wb')
+                f.write(rxBuffer)
+                f.close()
+
+                acknowledge()
+
+        txLen = 4
+        rxBuffer, nRx = com1.getData(txLen)
+        print("EOP: {}" .format(rxBuffer))
+        time.sleep(0.5)
+
+            
+
+
+        
 
 
 
 
-        #faça aqui uma conferência do tamanho do seu txBuffer, ou seja, quantos bytes serão enviados.
+        # #-----P2-----
+
+        # #recebendo o numero de comandos"
+        # # print("ouvindo")
+
+
+        # txLen = 1
+        # rxBuffer, nRx = com1.getData(txLen)
+        # rxBuffer = int.from_bytes(rxBuffer, byteorder='big')
+        # number_commands = rxBuffer
+        # print("recebeu n_commands: {}" .format(number_commands))
+        # time.sleep(0.1)
+
+        # #recebendo os tamanhos dos commandos:
+        # commands_size = []
+        # for i in range(number_commands):
+        #     time.sleep(0.1)
+        #     rxBuffer, nRx = com1.getData(1)
+        #     rxBuffer = int.from_bytes(rxBuffer, byteorder='big')
+        #     commands_size.append(rxBuffer)
+        #     print("recebeu tamanho {}:" .format(i))
+        #     print(rxBuffer)
+
+
+
+
+        # #faça aqui uma conferência do tamanho do seu txBuffer, ou seja, quantos bytes serão enviados.
        
             
-        #finalmente vamos transmitir os tados. Para isso usamos a funçao sendData que é um método da camada enlace.
-        #faça um print para avisar que a transmissão vai começar.
-        #tente entender como o método send funciona!
-        #Cuidado! Apenas trasmitimos arrays de bytes! Nao listas!
+        # #finalmente vamos transmitir os tados. Para isso usamos a funçao sendData que é um método da camada enlace.
+        # #faça um print para avisar que a transmissão vai começar.
+        # #tente entender como o método send funciona!
+        # #Cuidado! Apenas trasmitimos arrays de bytes! Nao listas!
   
-        #txBuffer = #dados
+        # #txBuffer = #dados
 
-        # com1.sendData(np.asarray(txBuffer))
+        # # com1.sendData(np.asarray(txBuffer))
 
-        # A camada enlace possui uma camada inferior, TX possui um método para conhecermos o status da transmissão
-        # Tente entender como esse método funciona e o que ele retorna
+        # # A camada enlace possui uma camada inferior, TX possui um método para conhecermos o status da transmissão
+        # # Tente entender como esse método funciona e o que ele retorna
 
-        txSize = com1.tx.getStatus()
+        # txSize = com1.tx.getStatus()
 
-        #Agora vamos iniciar a recepção dos dados. Se algo chegou ao RX, deve estar automaticamente guardado
-        #Observe o que faz a rotina dentro do thread RX
-        #print um aviso de que a recepção vai começar.
+        # #Agora vamos iniciar a recepção dos dados. Se algo chegou ao RX, deve estar automaticamente guardado
+        # #Observe o que faz a rotina dentro do thread RX
+        # #print um aviso de que a recepção vai começar.
 
       
-        #Será que todos os bytes enviados estão realmente guardadas? Será que conseguimos verificar?
-        #Veja o que faz a funcao do enlaceRX  getBufferLen
+        # #Será que todos os bytes enviados estão realmente guardadas? Será que conseguimos verificar?
+        # #Veja o que faz a funcao do enlaceRX  getBufferLen
 
-        #recebendo os commandos em si:
-        commands = []
-        for i in commands_size:
-            time.sleep(0.1)
-            rxBuffer, nRx = com1.getData(i)
-            print("here")
-            commands.append(rxBuffer)
-            print("recebeu commando {}:" .format(commands_size.index(i)))
-            print(rxBuffer)
+        # #recebendo os commandos em si:
+        # commands = []
+        # for i in commands_size:
+        #     time.sleep(0.1)
+        #     rxBuffer, nRx = com1.getData(i)
+        #     print("here")
+        #     commands.append(rxBuffer)
+        #     print("recebeu commando {}:" .format(commands_size.index(i)))
+        #     print(rxBuffer)
             
 
         #enviando quantos comandos foram recebidos:
-        txBuffer = (len(commands_size)).to_bytes(1,byteorder='big')
-        print("mandando {} commandos".format(len(commands_size)))
-        com1.sendData(np.asarray(txBuffer))
+        # txBuffer = (len(commands_size)).to_bytes(1,byteorder='big')
+        # print("mandando {} commandos".format(len(commands_size)))
+        # com1.sendData(np.asarray(txBuffer))
 
         print("-------------------------")
         print("Comunicação encerrada")
