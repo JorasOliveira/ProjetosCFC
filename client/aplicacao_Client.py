@@ -86,7 +86,7 @@ def main():
                 rxBuffer, nRx = com1.getData(txLen)
                 return False
 
-        def send_data(i):
+        def send_img(i):
             l = [20, i+1, size_of_dog, 114, 0, 0, 0, 0, 0, 0]
             pacote = bytes(l + list(dog[114*i: 114*(i+1)]) + eop)
             print(pacote[3])
@@ -121,7 +121,7 @@ def main():
         #montando a mensagem em si:
         for i in range(size_of_dog):
             if acknowledge():
-                send_data(i)
+                send_img(i)
             else: print("waiting for Acknowledge...")
             
             
