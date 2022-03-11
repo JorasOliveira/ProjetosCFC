@@ -13,6 +13,7 @@
 from base64 import decode
 from calendar import c
 from http import client, server
+from sys import byteorder
 from enlace_Client import *
 import time
 import numpy as np
@@ -45,7 +46,7 @@ def main():
 
         #-----P3-----
          # 1- mandando o head
-        t_i= time.time()   #tempo inicial p/ timeout
+        #t_i= time.time()   #tempo inicial p/ timeout
 
         #compondo o head
         '''HEAD: 
@@ -56,21 +57,11 @@ def main():
         5 bytes vazios
 
         TIPOS DE MENSAGEM:
-        HandShake  - a
-        Dados      - b
-        Acknoledge - c
-        FIM        - d
+        HandShake  - 10
+        Dados      - 20
+        Acknowledge- 30
+        FIM        - 40
         '''
-
-        #head exemplo p/ teste
-        # txBuffer = (n_commands).to_bytes(1,byteorder='big')
-        # pacote = ""
-        # pacote += 'a' 
-        # pacote += '2' 
-        # pacote += '48' 
-        # pacote += '144' 
-        # pacote += '000'
-
         #carregando a imagem
         imgR = "client/img/dog.jpg"
         print("Loading Image: ")
@@ -78,27 +69,67 @@ def main():
         dog = open(imgR, 'rb').read()
 
         print(f"a imagem tem  tamanho: {len(dog)}")
-
         size_of_dog = int(len(dog)/114) + 1
         print(f"a imagem sera dividida em: {size_of_dog} pacotes")
 
-        #montando o head DO HANDSHAKE:
-        size_bytes = size_of_dog.to_bytes(1, byteorder='big')
+        def acknowledge():
+            time.sleep(0.1)
+            txLen = 10
+            rxBuffer, nRx = com1.getData(txLen)
+            time.sleep(0.1)
+            if rxBuffer[0] == 30:
+                txLen = 4
+                rxBuffer, nRx = com1.getData(txLen)
+                return True
+            else: 
+                txLen = 4
+                rxBuffer, nRx = com1.getData(txLen)
+                return False
 
-        bytes_to_number = int.from_bytes(size_bytes, byteorder='big')
-        print(bytes_to_number)
+        def send_data(i):
+            l = [20, i+1, size_of_dog, 114, 0, 0, 0, 0, 0, 0]
+            pacote = bytes(l + list(dog[114*i: 114*(i+1)]) + eop)
+            print(pacote[3])
+            time.sleep(0.1)
+            txBuffer = pacote
+            print(txBuffer)
+            time.sleep(0.1)
+            com1.sendData(np.asarray(txBuffer))
+            time.sleep(0.5)
 
-        zero = (0).to_bytes(1, byteorder='big')
-        a = str.encode('a')
-        pacote = a + zero + size_bytes + zero*7     #0{size_of_dog.to_bytes(1, byteorder='big')}000000'
-        print(pacote)
-        
-        #mandando
+
+
+
+
+        #lista de ints, cada int sera escrito como um byte quando byte(l)
+        #lista do head
+        l = [10, 0, size_of_dog, 0, 0, 0, 0, 0, 0, 0]
+        eop = [85, 85, 85, 85]        
+        #fazemos uma lista de bytes com a lista de ints, cada byte tem tamanho e posicao igual ao do int equivalente na lista
+        handshake = bytes(l + eop) 
+        pacote = handshake  #temporario     
+        # print(len(pacote))      
+        # print(pacote[2])
+
+        #mandando o HandShake:
         time.sleep(0.1)
         txBuffer = pacote
-        print(txBuffer)
+        print(f"enviando: {txBuffer}")
         time.sleep(0.1)
         com1.sendData(np.asarray(txBuffer))
+
+        #montando a mensagem em si:
+        for i in range(size_of_dog):
+            if acknowledge():
+                send_data(i)
+            else: print("waiting for Acknowledge...")
+            
+            
+
+
+
+
+
 
 
         #-----P2-----
@@ -142,26 +173,26 @@ def main():
         # 3- Ficar ouvindo ate receber uma resposta ou ate o time-out de 10 seg
 
         
-        deltaTime = time.time() - t_i
-        print("deltaT: {}".format(deltaTime))
+        # deltaTime = time.time() - t_i
+        # print("deltaT: {}".format(deltaTime))
 
-        txLen = 1
-        rxBuffer, nRx = com1.getData(txLen)
-        if rxBuffer.isalpha():
-            print("TimeOut :(")
-            com1.disable()
-            exit()
-        rxBuffer = int.from_bytes(rxBuffer, byteorder='big')
-        print("recebeu n_commands: {}" .format(rxBuffer))
+        # txLen = 1
+        # rxBuffer, nRx = com1.getData(txLen)
+        # if rxBuffer.isalpha():
+        #     print("TimeOut :(")
+        #     com1.disable()
+        #     exit()
+        # rxBuffer = int.from_bytes(rxBuffer, byteorder='big')
+        # print("recebeu n_commands: {}" .format(rxBuffer))
 
-        if (rxBuffer - n_commands) == 0:
-            print("commandos enviados com sucesso!!")
-            com1.disable()
-            exit()
-        else: 
-            print("Erro ao enviar os commandos :(") 
-            com1.disable()
-            exit()
+        # if (rxBuffer - n_commands) == 0:
+        #     print("commandos enviados com sucesso!!")
+        #     com1.disable()
+        #     exit()
+        # else: 
+        #     print("Erro ao enviar os commandos :(") 
+        #     com1.disable()
+        #     exit()
 
         
     
