@@ -32,7 +32,7 @@ def main():
     try:
         #declaramos um objeto do tipo enlace com o nome "com". Essa é a camada inferior à aplicação. Observe que um parametro
         #para declarar esse objeto é o nome da porta.
-        com1 = enlace('COM4')
+        com1 = enlace('COM5')
         
         # Ativa comunicacao. Inicia os threads e a comunicação seiral 
         com1.enable()
@@ -87,15 +87,22 @@ def main():
                 return False
 
         def send_img(i):
-            l = [20, i+1, size_of_dog, 114, 0, 0, 0, 0, 0, 0]
-            pacote = bytes(l + list(dog[114*i: 114*(i+1)]) + eop)
+
+            #variando o tamanho da payload quando chegamos no ultimo pacote
+            try: 
+                h = [20, i+1, size_of_dog, 114, 0, 0, 0, 0, 0, 0]
+                pacote = bytes(h + list(dog[114*i: 114*(i+1)]) + eop)
+            except: 
+                h = [20, i+1, size_of_dog, 114, 0, 0, 0, 0, 0, 0]
+                pacote = bytes(h + list(dog[114*i: -1]) + eop)
+
             print(pacote[3])
             time.sleep(0.1)
             txBuffer = pacote
             print(txBuffer)
             time.sleep(0.1)
             com1.sendData(np.asarray(txBuffer))
-            time.sleep(0.5)
+            time.sleep(0.1)
 
 
 
