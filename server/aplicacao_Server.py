@@ -34,7 +34,7 @@ def main():
     try:
         #declaramos um objeto do tipo enlace com o nome "com". Essa é a camada inferior à aplicação. Observe que um parametro
         #para declarar esse objeto é o nome da porta.
-        com1 = enlace('COM4')
+        com1 = enlace('COM5')
         
     
         # Ativa comunicacao. Inicia os threads e a comunicação seiral 
@@ -83,7 +83,7 @@ def main():
             pacote = head + eop
 
             txBuffer = pacote
-            print(txBuffer)
+            #print(txBuffer)
             time.sleep(0.1)
             com1.sendData(np.asarray(txBuffer))
 
@@ -94,14 +94,17 @@ def main():
 
             
         #HEAD
+        print(quantidade_pacotes)
         for i in range(quantidade_pacotes):
+            #print(i)
             
-            print('ouvindo')
+            #wprint('ouvindo')
 
             txLen = 10
+            time.sleep(0.1)
             rxBuffer, nRx = com1.getData(txLen)
             print("recebeu: {}" .format(rxBuffer))
-            time.sleep(0.5)
+            #time.sleep(0.1)
 
             index = rxBuffer[0]
 
@@ -118,35 +121,56 @@ def main():
 
             #Montando a imagem
             txLen = tamanho_payload
-            time.sleep(0.1)
+            #time.sleep(0.1)
 
-            rxBuffer, nRx = com1.getData(txLen)
             time.sleep(0.1)
+            rxBuffer, nRx = com1.getData(txLen)
+            #time.sleep(0.1)
 
             imagem = b''
-            lista_imagem = list(imagem)
+            lista_imagem = []
+            lista_imagem.append(rxBuffer)
             print(len(rxBuffer))
             print(rxBuffer)
 
-            for b in range(len(rxBuffer)):
+            time.sleep(0.1)
+            rxBuffer, nRx = com1.getData(4)
+            #time.sleep(0.1)
+            eop = rxBuffer
+            acknowledge()
+            
+            #package = rxBuffer
+            # for b in range(len(rxBuffer)):
+            
+                
+            #     #print(rxBuffer[b])
+            #     lista_imagem.append(rxBuffer[b])
+            #     time.sleep(0.1)
+            #     #print(lista_imagem)
 
-                imgW = "server/img/copyDog.jpg"
+            #     # print("Receving DATA: ")
+            #     # print(" -{}".format(imgW))
+            #     time.sleep(0.1)
 
-                lista_imagem.append(bytes(rxBuffer[b]))
-                time.sleep(0.1)
-                print(lista_imagem)
+            #     # f = open(imgW, 'wb')
+            #     # f.write(rxBuffer)
+            #     # f.close()
+            #     # time.sleep(0.1)
 
-                print("Receving DATA: ")
-                print(" -{}".format(imgW))
-                time.sleep(0.1)
+            #     acknowledge()
+            #     #print("oi")
+            #     # time.sleep(0.1)
 
-                f = open(imgW, 'wb')
-                f.write(rxBuffer)
-                f.close()
-                time.sleep(0.1)
+        imgW = "server/img/copyDog.jpg"
+        f = open(imgW, 'wb')
+        f.write(rxBuffer)
+        f.close()
+        print("acabou!")
+        time.sleep(0.1)
 
-                acknowledge()
-                time.sleep(0.1)
+        acknowledge()
+        time.sleep(0.1)
+
 
         txLen = 4
         rxBuffer, nRx = com1.getData(txLen)
