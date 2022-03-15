@@ -118,25 +118,35 @@ def main():
 
             #Montando a imagem
             txLen = tamanho_payload
+            time.sleep(0.1)
+
             rxBuffer, nRx = com1.getData(txLen)
+            time.sleep(0.1)
+
             imagem = b''
+            lista_imagem = list(imagem)
             print(len(rxBuffer))
+            print(rxBuffer)
 
             for b in range(len(rxBuffer)):
 
                 imgW = "server/img/copyDog.jpg"
 
-                imagem += bytes(rxBuffer[b])
-                print(imagem)
+                lista_imagem.append(bytes(rxBuffer[b]))
+                time.sleep(0.1)
+                print(lista_imagem)
 
                 print("Receving DATA: ")
                 print(" -{}".format(imgW))
+                time.sleep(0.1)
 
                 f = open(imgW, 'wb')
                 f.write(rxBuffer)
                 f.close()
+                time.sleep(0.1)
 
                 acknowledge()
+                time.sleep(0.1)
 
         txLen = 4
         rxBuffer, nRx = com1.getData(txLen)
