@@ -81,15 +81,18 @@ def main():
         print(f"numero do pacote: {n_pacotes}")
         print(f"quantidade de pacotes: {quantidade_pacotes}")
         
-
-        if index == 10: # index 10 == handhsake, podemos prosseguir
+        if index is 10: # index 10 == handhsake, podemos prosseguir]
             acknowledge(True)
             start = True
-        else: start =False
+        else: 
+            start = False
 
         txLen = 4
         rxBuffer, nRx = com1.getData(txLen)
         print("EOP: {}" .format(rxBuffer))
+
+        acknowledge(True)
+        
         time.sleep(0.5)
 
         #CONSTRUCAO DA IMAGEM
@@ -98,8 +101,9 @@ def main():
         if start:
             lista_imagem = []
             for i in range(quantidade_pacotes):
-                
+
                 #lendo o HEAD:
+
                 txLen = 10
                 time.sleep(0.1)
                 rxBuffer, nRx = com1.getData(txLen)
@@ -157,11 +161,12 @@ def main():
 
                         else: #caso algo nao esteja igual, pedimos para re-enviar o pacote
                             acknowledge(False)
+                            
 
 
         imgW = "server/img/copyDog.jpg"
         f = open(imgW, 'wb')
-        f.write(lista_imagem)
+        f.write(bytes(lista_imagem))
         f.close()
         print("acabou!")
         time.sleep(0.1)
