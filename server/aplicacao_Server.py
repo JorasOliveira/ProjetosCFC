@@ -58,16 +58,16 @@ def main():
             eop = [85, 85, 85, 85]
             pacote = head + eop
             txBuffer = pacote
-            time.sleep(0.1)
+            (0.01)
             com1.sendData(np.asarray(bytes(txBuffer)))
 
         print("ouvindo:")
 
         #HANDSHAKE
         txLen = 10
+        (0.01)
         rxBuffer, nRx = com1.getData(txLen)
         print("recebeu: {}" .format(rxBuffer))
-        time.sleep(0.1)
 
         index = rxBuffer[0]
 
@@ -94,23 +94,21 @@ def main():
 
 
         # acknowledge(True)
-        
-        time.sleep(0.5)
 
         #CONSTRUCAO DA IMAGEM
         eop_correto = [85, 85, 85, 85]
 
         if start:
             lista_imagem = []
-            for i in range(quantidade_pacotes):
+            for i in range(quantidade_pacotes -1):
 
                 #lendo o HEAD:
 
                 txLen = 10
-                time.sleep(0.1)
+                (0.01)
                 rxBuffer, nRx = com1.getData(txLen)
                 print("recebeu: {}" .format(list(rxBuffer)))
-                #time.sleep(0.1)
+                #
 
                 index = rxBuffer[0]
 
@@ -130,52 +128,50 @@ def main():
                     n_ultimo_pacote = n_pacotes
 
                 if n_pacotes != (n_ultimo_pacote + 1):
-                    print("erro no numero de pacotes")
+                    print("ERRO no numero do pacote")
                     acknowledge(False)
 
-                elif i >= 0:
-                    #print("tamanho payload: {}" .format(tamanho_payload))
-                    #print(list(rxBuffer))
+                #print("tamanho payload: {}" .format(tamanho_payload))
+                #print(list(rxBuffer))
 
                     #Montando a imagem
-                    txLen = tamanho_payload
-                    #time.sleep(0.1)
+                txLen = tamanho_payload
+                    #
 
-                    time.sleep(0.1)
-                    rxBuffer, nRx = com1.getData(txLen)
-                    print(f"tamanho da payloadL{len(rxBuffer)}")
-                    print(f"tamanho experado da payload: {txLen}")
+                (0.01)
+                rxBuffer, nRx = com1.getData(txLen)
+                print(f"tamanho da payloadL{len(rxBuffer)}")
+                print(f"tamanho experado da payload: {txLen}")
 
-                    if len(rxBuffer) != txLen:
-                        print("erro no tamanho da payload")
+                if len(rxBuffer) != txLen:
+                    print("erro no tamanho da payload")
+                    acknowledge(False)
+
+                else:
+                        #
+                        #le a payload, adiciona a lista_imagem
+                    n_pacotes += 1
+                    lista_imagem.append(rxBuffer)
+                    print(len(rxBuffer))
+                    print(rxBuffer)
+
+                    (0.01)
+                    rxBuffer, nRx = com1.getData(4)
+                    eop_recebido = rxBuffer
+                    print(f"eop: {list(rxBuffer)}")
+
+                    if list(eop_recebido) != eop_correto: #compara a lista elemento a elemento
                         acknowledge(False)
 
-                    else:
-                        #time.sleep(0.1)
-                        #le a payload, adiciona a lista_imagem
-                        lista_imagem.append(rxBuffer)
-                        print(len(rxBuffer))
-                        print(rxBuffer)
-
-                        time.sleep(0.1)
-                        rxBuffer, nRx = com1.getData(4)
-                        time.sleep(0.1)
-                        eop_recebido = rxBuffer
-                        print(f"eop: {list(rxBuffer)}")
-
-                        if eop_recebido != eop_correto: #compara a lista elemento a elemento
-                            acknowledge(False)
-
-                        else: acknowledge(True)
+                    else: acknowledge(True)
                             
 
 
         imgW = "server/img/copyDog.jpg"
         f = open(imgW, 'wb')
-        f.write(bytes(lista_imagem))
+        f.write(lista_imagem)
         f.close()
         print("acabou!")
-        time.sleep(0.1)
 
 
             
@@ -197,12 +193,12 @@ def main():
         # rxBuffer = int.from_bytes(rxBuffer, byteorder='big')
         # number_commands = rxBuffer
         # print("recebeu n_commands: {}" .format(number_commands))
-        # time.sleep(0.1)
+        # 
 
         # #recebendo os tamanhos dos commandos:
         # commands_size = []
         # for i in range(number_commands):
-        #     time.sleep(0.1)
+        #     
         #     rxBuffer, nRx = com1.getData(1)
         #     rxBuffer = int.from_bytes(rxBuffer, byteorder='big')
         #     commands_size.append(rxBuffer)
@@ -240,7 +236,7 @@ def main():
         # #recebendo os commandos em si:
         # commands = []
         # for i in commands_size:
-        #     time.sleep(0.1)
+        #     
         #     rxBuffer, nRx = com1.getData(i)
         #     print("here")
         #     commands.append(rxBuffer)

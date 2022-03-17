@@ -77,8 +77,8 @@ def main():
 
         #le o acknowledge e checa se ta correto:
         def acknowledge():
-            time.sleep(0.1)
             txLen = 10
+            (0.01)
             rxBuffer, nRx = com1.getData(txLen)
             print(f"head: {list(rxBuffer)}")
 
@@ -92,14 +92,13 @@ def main():
             print(f"numero do pacote: {n_pacotes}")
 
             txLen = 4
-            time.sleep(0.1)
+            (0.01)
             rxBuffer, nRx = com1.getData(txLen)
 
             print(f"eop: {list(rxBuffer)}")
             if eop != list(rxBuffer):
                 return False
 
-            time.sleep(0.1)
             if index == 30:
                 print("works")
                 #tira o EOP do buffer e retorna
@@ -137,23 +136,19 @@ def main():
             print("sending")
             #variando o tamanho da payload quando chegamos no ultimo pacote
             try: 
-                time.sleep(0.5)
                 h = [20, i+1, size_of_dog, 114, 0, 0, 0, 0, 0, 0]
                 pacote = bytes(h + list(dog[114*i: 114*(i+1)]) + eop)
 
             #no ultimo pacote, teremos erro de index out of range, dai usamos o except
             except: 
-                time.sleep(0.5)
                 h = [20, i+1, size_of_dog, 114, 0, 0, 0, 0, 0, 0]
                 pacote = bytes(h + list(dog[114*i: -1]) + eop)
 
             #print(pacote[3])
-            time.sleep(0.1)
             txBuffer = pacote
             print(txBuffer)
-            time.sleep(0.5)
+            (0.01)
             com1.sendData(np.asarray(txBuffer))
-            time.sleep(0.1)
 
 
 
@@ -166,10 +161,9 @@ def main():
             pacote = handshake  #temporario     
 
             #mandando o HandShake:
-            time.sleep(0.1)
             txBuffer = pacote
             #print(f"enviando: {txBuffer}")
-            time.sleep(0.1)
+            (0.01)
             com1.sendData(np.asarray(txBuffer))
 
             if acknowledge():
@@ -181,7 +175,6 @@ def main():
         start = handshake()
         while(start is False):
             print("HandShake ERROR, retrying")
-            time.sleep(1)
             start = handshake()
             
         if start:
@@ -199,28 +192,12 @@ def main():
                     if help:
                         send_img(i)
                         i += 1
-                        time.sleep(0.5)
+                        (0.01)
 
                     else: 
                         print("waiting for Acknowledge...")
 
                 else : acabou = True
-
-
-
-            # for i in r:
-            #     print(i)
-
-            #     #se o acknowledge veio true, significa que podemos enviar o proximo pacote
-            #     time.sleep(0.5)
-            #     if acknowledge(i):
-            #         send_img(i)
-            #         time.sleep(0.5)
-            #     else: 
-            #         print("waiting for Acknowledge...")
-                
-            
-
 
 
 
@@ -236,7 +213,7 @@ def main():
         # n_commands = randint(10, 30)
         # txBuffer = (n_commands).to_bytes(1,byteorder='big')
         # print("mandando {} commandos".format(n_commands))
-        # time.sleep(0.1)
+        # 
         # com1.sendData(np.asarray(txBuffer))
 
         # 2- Passar o comando em si
@@ -246,7 +223,7 @@ def main():
         #mandando os tamanhos dos comandos
         # sent_commands = []
         # for command in range(n_commands):
-        #     time.sleep(0.1)
+        #     
         #     c = choice(commands)
         #     sent_commands.append(c)
         #     txBuffer = len(c).to_bytes(1,byteorder='big')
@@ -256,7 +233,7 @@ def main():
 
         # #mandando os commandos em si
         # for command in range(n_commands):
-        #     time.sleep(0.1)
+        #     
         #     c = sent_commands.pop(0)
         #     # txBuffer = bytes(c, "UTF-8")
         #     txBuffer = c.encode(encoding = 'UTF-8')
