@@ -73,16 +73,26 @@ def main():
         size_of_dog = int(len(dog)/114) + 1
         print(f"a imagem sera dividida em: {size_of_dog} pacotes")
 
+        eop = [85, 85, 85, 85]
+
         #le o acknowledge e checa se ta correto:
         def acknowledge(i):
             time.sleep(0.1)
             txLen = 10
             rxBuffer, nRx = com1.getData(txLen)
-            if rxBuffer.isalpha():
+            index = rxBuffer[0]
+            n_pacotes = rxBuffer[1]
+
+            print(f"codigo: {index}")
+            print(f"numero do pacote: {n_pacotes}")
+
+            if isinstance(index, str):
                 return False
+
             time.sleep(0.1)
 
-            if rxBuffer[0] == 30:
+            if index == 30:
+                print("here")
                 #tira o EOP do buffer e retorna
                 txLen = 4
                 rxBuffer, nRx = com1.getData(txLen)
@@ -95,7 +105,7 @@ def main():
             #     rxBuffer, nRx = com1.getData(txLen)
             #     return True
 
-            elif rxBuffer[0] == 40 and i != 0:
+            elif index == 40 and i != 0:
                 send_img(i - 1)
                 #chama a si mesmo e checa o aknowledge, idealmente sempre vai retornar a menos que tenha um loop
                 #infinito de 40 como resposta :/
@@ -114,7 +124,6 @@ def main():
         #manda a imagem, monta o pacote baseado no index recebido
         def send_img(i):
             #variando o tamanho da payload quando chegamos no ultimo pacote
-            eop = [85, 85, 85, 85]
             try: 
                 time.sleep(0.5)
                 h = [20, i+1, size_of_dog, 114, 0, 0, 0, 0, 0, 0]
@@ -139,8 +148,7 @@ def main():
         def handshake():
             #lista de ints, cada int sera escrito como um byte quando byte(l)
             #lista do head
-            l = [10, 0, size_of_dog, 0, 0, 0, 0, 0, 0, 0]
-            eop = [85, 85, 85, 85]        
+            l = [10, 0, size_of_dog, 0, 0, 0, 0, 0, 0, 0]       
             #fazemos uma lista de bytes com a lista de ints, cada byte tem tamanho e posicao igual ao do int equivalente na lista
             handshake = bytes(l + eop) 
             pacote = handshake  #temporario     
