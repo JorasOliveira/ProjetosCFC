@@ -96,14 +96,12 @@ def main():
             rxBuffer, nRx = com1.getData(txLen)
 
             print(f"eop: {list(rxBuffer)}")
-            if eop != rxBuffer:
-                print("eop error")
+            if eop != list(rxBuffer):
                 return False
-
 
             time.sleep(0.1)
             if index == 30:
-                print("here")
+                print("works")
                 #tira o EOP do buffer e retorna
                 txLen = 4
                 rxBuffer, nRx = com1.getData(txLen)

@@ -80,6 +80,10 @@ def main():
         print(f"codigo: {index}")
         print(f"numero do pacote: {n_pacotes}")
         print(f"quantidade de pacotes: {quantidade_pacotes}")
+
+        txLen = 4
+        rxBuffer, nRx = com1.getData(txLen)
+        print("EOP: {}" .format(list(rxBuffer)))
         
         if index == 10: # index 10 == handhsake, podemos prosseguir]
             acknowledge(True)
@@ -87,11 +91,9 @@ def main():
         else: 
             start = False
 
-        txLen = 4
-        rxBuffer, nRx = com1.getData(txLen)
-        print("EOP: {}" .format(list(rxBuffer)))
 
-        acknowledge(True)
+
+        # acknowledge(True)
         
         time.sleep(0.5)
 
