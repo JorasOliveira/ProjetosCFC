@@ -59,7 +59,7 @@ def main():
             pacote = head + eop
             txBuffer = pacote
             time.sleep(0.1)
-            com1.sendData(np.asarray(txBuffer))
+            com1.sendData(np.asarray(bytes(txBuffer)))
 
         print("ouvindo:")
 
@@ -89,7 +89,7 @@ def main():
 
         txLen = 4
         rxBuffer, nRx = com1.getData(txLen)
-        print("EOP: {}" .format(rxBuffer))
+        print("EOP: {}" .format(list(rxBuffer)))
 
         acknowledge(True)
         
@@ -107,7 +107,7 @@ def main():
                 txLen = 10
                 time.sleep(0.1)
                 rxBuffer, nRx = com1.getData(txLen)
-                print("recebeu: {}" .format(rxBuffer))
+                print("recebeu: {}" .format(list(rxBuffer)))
                 #time.sleep(0.1)
 
                 index = rxBuffer[0]
@@ -130,7 +130,7 @@ def main():
                 if n_pacotes != (n_ultimo_pacote + 1):
                     acknowledge(False)
 
-                else:
+                elif i >= 0:
                     #print("tamanho payload: {}" .format(tamanho_payload))
                     #print(list(rxBuffer))
 
@@ -140,6 +140,8 @@ def main():
 
                     time.sleep(0.1)
                     rxBuffer, nRx = com1.getData(txLen)
+                    print(f"tamanho da payloadL{len(rxBuffer)}")
+                    print(f"tamanho experado da payload: {txLen}")
 
                     if len(rxBuffer) != txLen:
                         acknowledge(False)

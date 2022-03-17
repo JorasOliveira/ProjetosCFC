@@ -83,6 +83,7 @@ def main():
             print(f"head: {list(rxBuffer)}")
 
             if isinstance(rxBuffer, str):
+                print("error timeout")
                 return False
 
             index = rxBuffer[0]
@@ -93,11 +94,11 @@ def main():
             txLen = 4
             time.sleep(0.1)
             rxBuffer, nRx = com1.getData(txLen)
+
             print(f"eop: {list(rxBuffer)}")
             if eop != rxBuffer:
+                print("eop error")
                 return False
-
-            
 
 
             time.sleep(0.1)
@@ -116,6 +117,7 @@ def main():
                 #     return True
 
             elif index == 40:
+                print("data error")
                 return 'f'
                     #chama a si mesmo e checa o aknowledge, idealmente sempre vai retornar a menos que tenha um loop
                     #infinito de 40 como resposta :/
@@ -126,6 +128,7 @@ def main():
                 return True
 
             else:
+                print("FUCK")
                 #tira o EOP do buffer e retorna
                 txLen = 4
                 rxBuffer, nRx = com1.getData(txLen)
