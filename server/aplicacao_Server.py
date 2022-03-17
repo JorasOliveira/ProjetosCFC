@@ -81,7 +81,7 @@ def main():
         print(f"numero do pacote: {n_pacotes}")
         print(f"quantidade de pacotes: {quantidade_pacotes}")
         
-        if index is 10: # index 10 == handhsake, podemos prosseguir]
+        if index == 10: # index 10 == handhsake, podemos prosseguir]
             acknowledge(True)
             start = True
         else: 
@@ -154,13 +154,13 @@ def main():
                         time.sleep(0.1)
                         rxBuffer, nRx = com1.getData(4)
                         time.sleep(0.1)
-                        eop = rxBuffer
+                        eop_recebido = rxBuffer
+                        print(f"eop: {list(rxBuffer)}")
 
-                        if eop == eop_correto: #compara a lista elemento a elemento
-                            acknowledge(True)
-
-                        else: #caso algo nao esteja igual, pedimos para re-enviar o pacote
+                        if eop_recebido != eop_correto: #compara a lista elemento a elemento
                             acknowledge(False)
+
+                        else: acknowledge(True)
                             
 
 

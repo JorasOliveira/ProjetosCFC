@@ -76,10 +76,11 @@ def main():
         eop = [85, 85, 85, 85]
 
         #le o acknowledge e checa se ta correto:
-        def acknowledge(i):
+        def acknowledge():
             time.sleep(0.1)
             txLen = 10
             rxBuffer, nRx = com1.getData(txLen)
+            print(f"head: {list(rxBuffer)}")
 
             if isinstance(rxBuffer, str):
                 return False
@@ -88,6 +89,15 @@ def main():
             n_pacotes = rxBuffer[1]
             print(f"codigo: {index}")
             print(f"numero do pacote: {n_pacotes}")
+
+            txLen = 4
+            time.sleep(0.1)
+            rxBuffer, nRx = com1.getData(txLen)
+            print(f"eop: {list(rxBuffer)}")
+            if eop != rxBuffer:
+                return False
+
+            
 
 
             time.sleep(0.1)
@@ -106,10 +116,10 @@ def main():
                 #     return True
 
             elif index == 40:
-                send_img(i - 1)
+                return 'f'
                     #chama a si mesmo e checa o aknowledge, idealmente sempre vai retornar a menos que tenha um loop
                     #infinito de 40 como resposta :/
-                acknowledge(i)
+                acknowledge()
                     #tira o EOP do buffer e retorna
                 txLen = 4
                 rxBuffer, nRx = com1.getData(txLen)
@@ -161,7 +171,7 @@ def main():
             time.sleep(0.1)
             com1.sendData(np.asarray(txBuffer))
 
-            if acknowledge(0):
+            if acknowledge():
                 return True
             else: return False
         
@@ -178,14 +188,19 @@ def main():
             i = 0
             while not acabou:
                 if i < size_of_dog:
+                    help  = acknowledge()
 
-                    if acknowledge(i):
+                    if isinstance(help, str):
+                        send_img(i -1)
+
+                    if help:
                         send_img(i)
                         i += 1
                         time.sleep(0.5)
+
                     else: 
                         print("waiting for Acknowledge...")
-                        
+
                 else : acabou = True
 
 
