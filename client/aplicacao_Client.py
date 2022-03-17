@@ -60,7 +60,8 @@ def main():
         HandShake  - 10
         Dados      - 20
         Acknowledge- 30
-        FIM        - 40
+        Resend     - 40 
+        FIM        - 50
         '''
         #carregando a imagem
         imgR = "client/img/dog.jpg"
@@ -72,27 +73,44 @@ def main():
         size_of_dog = int(len(dog)/114) + 1
         print(f"a imagem sera dividida em: {size_of_dog} pacotes")
 
-        def acknowledge():
+        #le o acknowledge e checa se ta correto:
+        def acknowledge(i):
             time.sleep(0.1)
             txLen = 10
             rxBuffer, nRx = com1.getData(txLen)
             time.sleep(0.1)
+
             if rxBuffer[0] == 30:
+                #tira o EOP do buffer e retorna
                 txLen = 4
                 rxBuffer, nRx = com1.getData(txLen)
                 return True
-            else: 
+
+            elif rxBuffer[0] == 40 and i != 0: #significa erro no envio do pacote, precisamos re-enviar ele
+                send_img(i - 1)
+                #chama a si mesmo e checa o aknowledge, idealmente sempre vai retornar a menos que tenha um loop
+                #infinito de 40 como resposta :/
+                acknowledge(i)
+                #tira o EOP do buffer e retorna
+                txLen = 4
+                rxBuffer, nRx = com1.getData(txLen)
+                return True
+
+            else:
+                #tira o EOP do buffer e retorna
                 txLen = 4
                 rxBuffer, nRx = com1.getData(txLen)
                 return False
 
+        #manda a imagem, monta o pacote baseado no index recebido
         def send_img(i):
-
             #variando o tamanho da payload quando chegamos no ultimo pacote
             try: 
                 time.sleep(0.5)
                 h = [20, i+1, size_of_dog, 114, 0, 0, 0, 0, 0, 0]
                 pacote = bytes(h + list(dog[114*i: 114*(i+1)]) + eop)
+
+            #no ultimo pacote, teremos erro de index out of range, dai usamos o except
             except: 
                 time.sleep(0.5)
                 h = [20, i+1, size_of_dog, 114, 0, 0, 0, 0, 0, 0]
@@ -108,32 +126,44 @@ def main():
 
 
 
+        def handshake():
+            #lista de ints, cada int sera escrito como um byte quando byte(l)
+            #lista do head
+            l = [10, 0, size_of_dog, 0, 0, 0, 0, 0, 0, 0]
+            eop = [85, 85, 85, 85]        
+            #fazemos uma lista de bytes com a lista de ints, cada byte tem tamanho e posicao igual ao do int equivalente na lista
+            handshake = bytes(l + eop) 
+            pacote = handshake  #temporario     
 
+            #mandando o HandShake:
+            time.sleep(0.1)
+            txBuffer = pacote
+            print(f"enviando: {txBuffer}")
+            time.sleep(0.1)
+            com1.sendData(np.asarray(txBuffer))
 
-        #lista de ints, cada int sera escrito como um byte quando byte(l)
-        #lista do head
-        l = [10, 0, size_of_dog, 0, 0, 0, 0, 0, 0, 0]
-        eop = [85, 85, 85, 85]        
-        #fazemos uma lista de bytes com a lista de ints, cada byte tem tamanho e posicao igual ao do int equivalente na lista
-        handshake = bytes(l + eop) 
-        pacote = handshake  #temporario     
-        # print(len(pacote))      
-        # print(pacote[2])
+            if acknowledge(0):
+                return True
+            else: return False
+        
 
-        #mandando o HandShake:
-        time.sleep(0.1)
-        txBuffer = pacote
-        print(f"enviando: {txBuffer}")
-        time.sleep(0.1)
-        com1.sendData(np.asarray(txBuffer))
+        #mandando a imagem:
 
-        #montando a mensagem em si:
-        for i in range(size_of_dog):
-            if acknowledge():
-                send_img(i)
-                time.sleep(0.5)
-            else: print("waiting for Acknowledge...")
+        
+        start = handshake()
+        while(start is False):
+            print("HandShake ERROR, retrying")
+            time.sleep(1)
+            start = handshake()
             
+        if start():
+            for i in range(size_of_dog):
+                #se o acknowledge veio true, significa que podemos enviar o proximo pacote
+                if acknowledge(i):
+                    send_img(i)
+                    time.sleep(0.5)
+                else: print("waiting for Acknowledge...")
+                
             
 
 
