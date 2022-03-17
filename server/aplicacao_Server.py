@@ -77,13 +77,13 @@ def main():
 
         tamanho_payload = rxBuffer[3]
         
-        print(f"codigo: {index}")
-        print(f"numero do pacote: {n_pacotes}")
-        print(f"quantidade de pacotes: {quantidade_pacotes}")
+        # print(f"codigo: {index}")
+        # print(f"numero do pacote: {n_pacotes}")
+        # print(f"quantidade de pacotes: {quantidade_pacotes}")
 
         txLen = 4
         rxBuffer, nRx = com1.getData(txLen)
-        print("EOP: {}" .format(list(rxBuffer)))
+        #print("EOP: {}" .format(list(rxBuffer)))
         
         if index == 10: # index 10 == handhsake, podemos prosseguir]
             acknowledge(True)
@@ -130,6 +130,7 @@ def main():
                     n_ultimo_pacote = n_pacotes
 
                 if n_pacotes != (n_ultimo_pacote + 1):
+                    print("erro no numero de pacotes")
                     acknowledge(False)
 
                 elif i >= 0:
@@ -146,6 +147,7 @@ def main():
                     print(f"tamanho experado da payload: {txLen}")
 
                     if len(rxBuffer) != txLen:
+                        print("erro no tamanho da payload")
                         acknowledge(False)
 
                     else:

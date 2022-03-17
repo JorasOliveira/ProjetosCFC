@@ -189,7 +189,9 @@ def main():
             i = 0
             while not acabou:
                 if i < size_of_dog:
-                    help  = acknowledge()
+                    if i > 0:
+                        help  = acknowledge()
+                    else: help = True
 
                     if isinstance(help, str):
                         send_img(i -1)
