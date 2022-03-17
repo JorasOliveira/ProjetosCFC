@@ -78,6 +78,8 @@ def main():
             time.sleep(0.1)
             txLen = 10
             rxBuffer, nRx = com1.getData(txLen)
+            if rxBuffer.isalpha():
+                return False
             time.sleep(0.1)
 
             if rxBuffer[0] == 30:
@@ -85,8 +87,15 @@ def main():
                 txLen = 4
                 rxBuffer, nRx = com1.getData(txLen)
                 return True
+            
+            #apenas para testes quando nao tem outro pc
+            # if rxBuffer[0] == 10:
+            #     #tira o EOP do buffer e retorna
+            #     txLen = 4
+            #     rxBuffer, nRx = com1.getData(txLen)
+            #     return True
 
-            elif rxBuffer[0] == 40 and i != 0: #significa erro no envio do pacote, precisamos re-enviar ele
+            elif rxBuffer[0] == 40 and i != 0:
                 send_img(i - 1)
                 #chama a si mesmo e checa o aknowledge, idealmente sempre vai retornar a menos que tenha um loop
                 #infinito de 40 como resposta :/
@@ -105,6 +114,7 @@ def main():
         #manda a imagem, monta o pacote baseado no index recebido
         def send_img(i):
             #variando o tamanho da payload quando chegamos no ultimo pacote
+            eop = [85, 85, 85, 85]
             try: 
                 time.sleep(0.5)
                 h = [20, i+1, size_of_dog, 114, 0, 0, 0, 0, 0, 0]
@@ -138,7 +148,7 @@ def main():
             #mandando o HandShake:
             time.sleep(0.1)
             txBuffer = pacote
-            print(f"enviando: {txBuffer}")
+            #print(f"enviando: {txBuffer}")
             time.sleep(0.1)
             com1.sendData(np.asarray(txBuffer))
 
@@ -148,15 +158,13 @@ def main():
         
 
         #mandando a imagem:
-
-        
         start = handshake()
         while(start is False):
             print("HandShake ERROR, retrying")
             time.sleep(1)
             start = handshake()
             
-        if start():
+        if start:
             for i in range(size_of_dog):
                 #se o acknowledge veio true, significa que podemos enviar o proximo pacote
                 if acknowledge(i):

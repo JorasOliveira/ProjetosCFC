@@ -47,13 +47,25 @@ def main():
         #nome de txBuffer. Esla sempre irá armazenar os dados a serem enviados.
 
         #-----P3-----
-        print("ouvindo head")
 
-        # Recebeu -- HANDSHAKE
+        def acknowledge(b): #boolean
+            #caso tenha dado algo errado, remandar o ultimo pacote
+            if b: 
+                head = [30, 0, 0 ,0 ,0, 0, 0 ,0 ,0, 0]
+            else: 
+                head = [40, 0, 0 ,0 ,0, 0, 0 ,0 ,0, 0]
 
+            eop = [85, 85, 85, 85]
+            pacote = head + eop
+            txBuffer = pacote
+            time.sleep(0.1)
+            com1.sendData(np.asarray(txBuffer))
+
+        print("ouvindo:")
+
+        #HANDSHAKE
         txLen = 10
         rxBuffer, nRx = com1.getData(txLen)
-        # rxBuffer = int.from_bytes(rxBuffer, byteorder='big')
         print("recebeu: {}" .format(rxBuffer))
         time.sleep(0.1)
 
@@ -65,111 +77,95 @@ def main():
 
         tamanho_payload = rxBuffer[3]
         
-        print(index)
-        print(n_pacotes)
-        print(quantidade_pacotes)
-        print(tamanho_payload)
+        print(f"codigo: {index}")
+        print(f"numero do pacote: {n_pacotes}")
+        print(f"quantidade de pacotes: {quantidade_pacotes}")
+        
+
+        if index == 10: # index 10 == handhsake, podemos prosseguir
+            acknowledge(True)
+            start = True
+        else: start =False
 
         txLen = 4
         rxBuffer, nRx = com1.getData(txLen)
         print("EOP: {}" .format(rxBuffer))
         time.sleep(0.5)
 
-        # ACKNOWLEDGE -- HANDSHAKE -- ENVIAR
-        def acknowledge(b): #boolean
-            #caso tenha dado algo errado, remandar o ultimo pacote
-            if b: 
-                head = [30, 0, 0 ,0 ,0, 0, 0 ,0 ,0, 0]
-            else: 
-                head = [40, 0, 0 ,0 ,0, 0, 0 ,0 ,0, 0]
-
-            eop = [85, 85, 85, 85]
-
-            pacote = head + eop
-
-            txBuffer = pacote
-            #print(txBuffer)
-            time.sleep(0.1)
-            com1.sendData(np.asarray(txBuffer))
-
-        acknowledge()
-
-
         #CONSTRUCAO DA IMAGEM
+        eop_correto = [85, 85, 85, 85]
 
-            
-        #HEAD
-        print(quantidade_pacotes)
-        for i in range(quantidade_pacotes):
-            #print(i)
-            
-            #wprint('ouvindo')
-
-            txLen = 10
-            time.sleep(0.1)
-            rxBuffer, nRx = com1.getData(txLen)
-            print("recebeu: {}" .format(rxBuffer))
-            #time.sleep(0.1)
-
-            index = rxBuffer[0]
-
-            n_pacotes = rxBuffer[1]
-
-            quantidade_pacotes = rxBuffer[2]
-
-            tamanho_payload = rxBuffer[3]
-
-            resto = rxBuffer[3:-1]
-
-
-            if i == 0:
-                n_ultimo_pacote = n_pacotes
-            if n_pacotes != (n_ultimo_pacote + 1):
-                acknowledge(False)
-            else:
-
-                print("tamanho payload: {}" .format(tamanho_payload))
-                print(list(rxBuffer))
-
-                #Montando a imagem
-                txLen = tamanho_payload
-                #time.sleep(0.1)
-
+        if start:
+            lista_imagem = []
+            for i in range(quantidade_pacotes):
+                
+                #lendo o HEAD:
+                txLen = 10
                 time.sleep(0.1)
                 rxBuffer, nRx = com1.getData(txLen)
+                print("recebeu: {}" .format(rxBuffer))
+                #time.sleep(0.1)
 
-                if len(rxBuffer) != txLen:
+                index = rxBuffer[0]
+
+                n_pacotes = rxBuffer[1]
+
+                quantidade_pacotes = rxBuffer[2]
+
+                tamanho_payload = rxBuffer[3]
+
+                resto = rxBuffer[3:-1]
+
+                print(f"codigo: {index}")
+                print(f"numero do pacote: {n_pacotes}")
+                print(f"quantidade de pacotes: {quantidade_pacotes}")
+        
+                if i == 0:
+                    n_ultimo_pacote = n_pacotes
+
+                if n_pacotes != (n_ultimo_pacote + 1):
                     acknowledge(False)
-                else:
-                    #time.sleep(0.1)
 
-                    imagem = b''
-                    lista_imagem = []
-                    lista_imagem.append(rxBuffer)
-                    print(len(rxBuffer))
-                    print(rxBuffer)
+                else:
+                    #print("tamanho payload: {}" .format(tamanho_payload))
+                    #print(list(rxBuffer))
+
+                    #Montando a imagem
+                    txLen = tamanho_payload
+                    #time.sleep(0.1)
 
                     time.sleep(0.1)
-                    rxBuffer, nRx = com1.getData(4)
-                    #time.sleep(0.1)
-                    eop = rxBuffer
-                    acknowledge(True)
+                    rxBuffer, nRx = com1.getData(txLen)
+
+                    if len(rxBuffer) != txLen:
+                        acknowledge(False)
+
+                    else:
+                        #time.sleep(0.1)
+                        #le a payload, adiciona a lista_imagem
+                        lista_imagem.append(rxBuffer)
+                        print(len(rxBuffer))
+                        print(rxBuffer)
+
+                        time.sleep(0.1)
+                        rxBuffer, nRx = com1.getData(4)
+                        time.sleep(0.1)
+                        eop = rxBuffer
+
+                        if eop == eop_correto: #compara a lista elemento a elemento
+                            acknowledge(True)
+
+                        else: #caso algo nao esteja igual, pedimos para re-enviar o pacote
+                            acknowledge(False)
+
 
         imgW = "server/img/copyDog.jpg"
         f = open(imgW, 'wb')
-        f.write(rxBuffer)
+        f.write(lista_imagem)
         f.close()
         print("acabou!")
         time.sleep(0.1)
 
-        acknowledge()
-        time.sleep(0.1)
-
-
-        txLen = 4
-        rxBuffer, nRx = com1.getData(txLen)
-        print("EOP: {}" .format(rxBuffer))
-        time.sleep(0.5)
 
             
 

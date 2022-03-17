@@ -71,12 +71,12 @@ class RX(object):
         ti = time.time()
         deltaT = 0
         while(self.getBufferLen() < size):
-            #deltaT = time.time() - ti
+            deltaT = time.time() - ti
             #print(deltaT)
             time.sleep(0.05)
 
-            # if deltaT > 10: 
-            #     return('c') 
+            if deltaT > 10: 
+                 return('c') 
 
         return(self.getBuffer(size))
 
