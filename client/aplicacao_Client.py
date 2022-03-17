@@ -80,37 +80,37 @@ def main():
             time.sleep(0.1)
             txLen = 10
             rxBuffer, nRx = com1.getData(txLen)
+
+            if isinstance(rxBuffer, str):
+                return False
+
             index = rxBuffer[0]
             n_pacotes = rxBuffer[1]
-
             print(f"codigo: {index}")
             print(f"numero do pacote: {n_pacotes}")
 
-            if isinstance(index, str):
-                return False
 
             time.sleep(0.1)
-
             if index == 30:
                 print("here")
                 #tira o EOP do buffer e retorna
                 txLen = 4
                 rxBuffer, nRx = com1.getData(txLen)
                 return True
-            
-            #apenas para testes quando nao tem outro pc
-            # if rxBuffer[0] == 10:
-            #     #tira o EOP do buffer e retorna
-            #     txLen = 4
-            #     rxBuffer, nRx = com1.getData(txLen)
-            #     return True
+                
+                #apenas para testes quando nao tem outro pc
+                # if rxBuffer[0] == 10:
+                #     #tira o EOP do buffer e retorna
+                #     txLen = 4
+                #     rxBuffer, nRx = com1.getData(txLen)
+                #     return True
 
-            elif index == 40 and i != 0:
+            elif index == 40:
                 send_img(i - 1)
-                #chama a si mesmo e checa o aknowledge, idealmente sempre vai retornar a menos que tenha um loop
-                #infinito de 40 como resposta :/
+                    #chama a si mesmo e checa o aknowledge, idealmente sempre vai retornar a menos que tenha um loop
+                    #infinito de 40 como resposta :/
                 acknowledge(i)
-                #tira o EOP do buffer e retorna
+                    #tira o EOP do buffer e retorna
                 txLen = 4
                 rxBuffer, nRx = com1.getData(txLen)
                 return True
@@ -123,6 +123,7 @@ def main():
 
         #manda a imagem, monta o pacote baseado no index recebido
         def send_img(i):
+            print("sending")
             #variando o tamanho da payload quando chegamos no ultimo pacote
             try: 
                 time.sleep(0.5)
@@ -173,12 +174,32 @@ def main():
             start = handshake()
             
         if start:
-            for i in range(size_of_dog):
-                #se o acknowledge veio true, significa que podemos enviar o proximo pacote
-                if acknowledge(i):
-                    send_img(i)
-                    time.sleep(0.5)
-                else: print("waiting for Acknowledge...")
+            acabou = False
+            i = 0
+            while not acabou:
+                if i < size_of_dog:
+
+                    if acknowledge(i):
+                        send_img(i)
+                        i += 1
+                        time.sleep(0.5)
+                    else: 
+                        print("waiting for Acknowledge...")
+                        
+                else : acabou = True
+
+
+
+            # for i in r:
+            #     print(i)
+
+            #     #se o acknowledge veio true, significa que podemos enviar o proximo pacote
+            #     time.sleep(0.5)
+            #     if acknowledge(i):
+            #         send_img(i)
+            #         time.sleep(0.5)
+            #     else: 
+            #         print("waiting for Acknowledge...")
                 
             
 

@@ -75,7 +75,7 @@ class RX(object):
             #print(deltaT)
             time.sleep(0.05)
 
-            if deltaT > 10: 
+            if deltaT > 5: 
                  return('c') 
 
         return(self.getBuffer(size))
