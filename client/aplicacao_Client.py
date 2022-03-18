@@ -78,9 +78,9 @@ def main():
         #le o acknowledge e checa se ta correto:
         def acknowledge():
             txLen = 10
-            (0.01)
+            time.sleep(0.1)
             rxBuffer, nRx = com1.getData(txLen)
-            print(f"head: {list(rxBuffer)}")
+            #print(f"head: {list(rxBuffer)}")
 
             if isinstance(rxBuffer, str):
                 print("error timeout")
@@ -88,11 +88,11 @@ def main():
 
             index = rxBuffer[0]
             n_pacotes = rxBuffer[1]
-            print(f"codigo: {index}")
-            print(f"numero do pacote: {n_pacotes}")
+            # print(f"codigo: {index}")
+            # print(f"numero do pacote: {n_pacotes}")
 
             txLen = 4
-            (0.01)
+            time.sleep(0.1)
             rxBuffer, nRx = com1.getData(txLen)
 
             print(f"eop: {list(rxBuffer)}")
@@ -102,8 +102,6 @@ def main():
             if index == 30:
                 print("works")
                 #tira o EOP do buffer e retorna
-                txLen = 4
-                rxBuffer, nRx = com1.getData(txLen)
                 return True
                 
                 #apenas para testes quando nao tem outro pc
@@ -125,18 +123,16 @@ def main():
                 return True
 
             else:
-                print("FUCK")
+                print("ERROR")
                 #tira o EOP do buffer e retorna
-                txLen = 4
-                rxBuffer, nRx = com1.getData(txLen)
                 return False
 
         #manda a imagem, monta o pacote baseado no index recebido
         def send_img(i):
-            print("sending")
+            #print("sending")
             #variando o tamanho da payload quando chegamos no ultimo pacote
             try: 
-                h = [20, i+1, size_of_dog, 114, 0, 0, 0, 0, 0, 0]
+                h = [20, i+3, size_of_dog, 114, 0, 0, 0, 0, 0, 0]
                 pacote = bytes(h + list(dog[114*i: 114*(i+1)]) + eop)
 
             #no ultimo pacote, teremos erro de index out of range, dai usamos o except
@@ -147,7 +143,7 @@ def main():
             #print(pacote[3])
             txBuffer = pacote
             print(txBuffer)
-            (0.01)
+            time.sleep(0.1)
             com1.sendData(np.asarray(txBuffer))
 
 
@@ -163,7 +159,7 @@ def main():
             #mandando o HandShake:
             txBuffer = pacote
             #print(f"enviando: {txBuffer}")
-            (0.01)
+            time.sleep(0.1)
             com1.sendData(np.asarray(txBuffer))
 
             if acknowledge():
@@ -182,22 +178,24 @@ def main():
             i = 0
             while not acabou:
                 if i < size_of_dog:
+
                     if i > 0:
                         help  = acknowledge()
-                    else: help = True
+                    else: 
+                        help = True
 
                     if isinstance(help, str):
-                        send_img(i -1)
+                        i -= 1
 
                     if help:
                         send_img(i)
                         i += 1
-                        (0.01)
+                        time.sleep(0.1)
 
                     else: 
                         print("waiting for Acknowledge...")
 
-                else : acabou = True
+                else: acabou = True
 
 
 
@@ -307,7 +305,7 @@ def main():
 if __name__ == "__main__":
     main()
 
-    # answer = int(input("Client(1) or Server(0)?"))
+    # answer = int(input("Client(0.1) or Server(0)?"))
 
     # if answer is 1:
     #     print("client")
