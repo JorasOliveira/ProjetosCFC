@@ -13,6 +13,7 @@
 from base64 import decode
 from calendar import c
 from http import client, server
+from socketserver import ThreadingUnixDatagramServer
 from sys import byteorder
 from enlace_Client import *
 import time
@@ -50,18 +51,24 @@ def main():
 
         #compondo o head
         '''HEAD: 
-        tipo de mensagem - 1 byte (character)
-        ordem dos pacotes: numero/total - 2 bytes (numero/numero)
-        tamanho da payload - 2bytes (nuemro)
-        stuff - 1 byte (charater?) - ff
-        5 bytes vazios
+        h0 - tipo
+        h1 - 
+        h2 - 
+        h3 - numero total de pacotes
+        h4 - numero do pacote enviado
+        h5 - se tipo == handshake: id, se tipi == dados: tamanho da payload
+        h6 - pacote solicitado para recomeco quadno tem erro no envio
+        h7 - ultimo pacote recebido com sucesso
+        h8 - CRC
+        h9 - CRC
 
         TIPOS DE MENSAGEM:
-        HandShake  - 10
-        Dados      - 20
-        Acknowledge- 30
-        Resend     - 40 
-        FIM        - 50
+        1 - inicio de transmissao, h0 = 1, h1 = identificador do server
+        2 - enviada pelo server, resposta do handhsake
+        3 - dados, contem o numero do ultimo pacote recebido, e o total a ser enviado
+        4 - acknowledge, contem o numero do ultimo pacote recebido
+        5 - timeout, deve finalizar a conecsao
+        6 - erro, deve conter o numero do pacote esperado pelo server, nao importa o problema
         '''
         #carregando a imagem
         imgR = "client/img/dog.jpg"
@@ -73,85 +80,16 @@ def main():
         size_of_dog = int(len(dog)/114) + 1
         print(f"a imagem sera dividida em: {size_of_dog} pacotes")
 
-        eop = [85, 85, 85, 85]
+        eop = [0xAA, 0xBB, 0xCC, 0xDD]
 
-        #le o acknowledge e checa se ta correto:
-        def acknowledge():
-            txLen = 10
-            time.sleep(0.1)
-            rxBuffer, nRx = com1.getData(txLen)
-            #print(f"head: {list(rxBuffer)}")
-
-            if isinstance(rxBuffer, str):
-                print("error timeout")
-                return False
-
-            index = rxBuffer[0]
-            n_pacotes = rxBuffer[1]
-            # print(f"codigo: {index}")
-            # print(f"numero do pacote: {n_pacotes}")
-
-            txLen = 4
-            time.sleep(0.1)
-            rxBuffer, nRx = com1.getData(txLen)
-
-            print(f"eop: {list(rxBuffer)}")
-            if eop != list(rxBuffer):
-                return False
-
-            if index == 30:
-                print("works")
-                #tira o EOP do buffer e retorna
-                return True
-                
-                #apenas para testes quando nao tem outro pc
-                # if rxBuffer[0] == 10:
-                #     #tira o EOP do buffer e retorna
-                #     txLen = 4
-                #     rxBuffer, nRx = com1.getData(txLen)
-                #     return True
-
-            elif index == 40:
-                print("data error")
-                return 'f'
-                    #chama a si mesmo e checa o aknowledge, idealmente sempre vai retornar a menos que tenha um loop
-                    #infinito de 40 como resposta :/
-                acknowledge()
-                    #tira o EOP do buffer e retorna
-                txLen = 4
-                rxBuffer, nRx = com1.getData(txLen)
-                return True
-
-            else:
-                print("ERROR")
-                #tira o EOP do buffer e retorna
-                return False
-
-        #manda a imagem, monta o pacote baseado no index recebido
-        def send_img(i):
-            #print("sending")
-            #variando o tamanho da payload quando chegamos no ultimo pacote
-            try: 
-                h = [20, i+3, size_of_dog, 114, 0, 0, 0, 0, 0, 0]
-                pacote = bytes(h + list(dog[114*i: 114*(i+1)]) + eop)
-
-            #no ultimo pacote, teremos erro de index out of range, dai usamos o except
-            except: 
-                h = [20, i+1, size_of_dog, 114, 0, 0, 0, 0, 0, 0]
-                pacote = bytes(h + list(dog[114*i: -1]) + eop)
-
-            #print(pacote[3])
-            txBuffer = pacote
-            print(txBuffer)
-            time.sleep(0.1)
-            com1.sendData(np.asarray(txBuffer))
-
-
-
-        def handshake():
+        
+        #TODO
+        #eh o handhsake, enviada pelo client para ver se pode comecar a transmissao
+        #tipo 2 eh a resposta do handshake, eh recebida pelo client
+        def type_1():
             #lista de ints, cada int sera escrito como um byte quando byte(l)
             #lista do head
-            l = [10, 0, size_of_dog, 0, 0, 0, 0, 0, 0, 0]       
+            l = [1, 0, 0, size_of_dog, 0, 10, 0, 0, 0, 0]       
             #fazemos uma lista de bytes com a lista de ints, cada byte tem tamanho e posicao igual ao do int equivalente na lista
             handshake = bytes(l + eop) 
             pacote = handshake  #temporario     
@@ -162,38 +100,100 @@ def main():
             time.sleep(0.1)
             com1.sendData(np.asarray(txBuffer))
 
-            if acknowledge():
-                return True
-            else: return False
         
+        #manda a imagem, monta o pacote baseado no index recebido
+        #TODO re-escrever o codigo 
+        #tipo 3 eh a mensagem de dados, o client envia os dados e escuta uma resposta
+        def type_3(i):
+            #print("sending")
+            #variando o tamanho da payload quando chegamos no ultimo pacote
+            try: 
+                h = [3, 0, 0, size_of_dog, i, 114, 0, 0, 0]
+                pacote = bytes(h + list(dog[114*i: 114*(i+1)]) + eop)
 
-        #mandando a imagem:
-        start = handshake()
+            #no ultimo pacote, teremos erro de index out of range, dai usamos o except
+            except: 
+                size = len(list(dog[114*i: 114*(i+1)]))
+                h = [3, 0, 0, size_of_dog, i, size, 0, 0, 0]
+                pacote = bytes(h + list(dog[114*i: 114*(i+1)]) + eop)
+
+            txBuffer = pacote
+            print(txBuffer)
+            time.sleep(0.1)
+            com1.sendData(np.asarray(txBuffer))
+        
+        #TODO envia uma mensagem tipo 5, e corta a conecao
+        def type_5():
+            h = [5, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            pacote = bytes(h + eop)
+
+            txBuffer = pacote
+            print(txBuffer)
+            time.sleep(0.1)
+            com1.sendData(np.asarray(txBuffer))
+        
+            print("TIME OUT")
+            print(":(")
+            com1.disable()
+
+        def handler(i): #handles o recebimento
+            txLen = 10
+            time.sleep(0.1)
+            rxBuffer, nRx = com1.getData(txLen, 1) #pegando o HEAD, 1 = timer 1, 5 segundos
+            # print(f"head: {list(rxBuffer)}")
+
+            codigo = rxBuffer[0]
+            pacote_correto = rxBuffer[6]
+            print(f"codigo: {codigo}")
+
+            txLen = 4
+            time.sleep(0.1)
+            rxBuffer, nRx = com1.getData(txLen)
+
+            print(f"eop: {list(rxBuffer)}")
+
+            if codigo == 2:
+                return (True, i)
+            elif codigo == 4:
+                return (True, i)
+            else:
+                return (False, pacote_correto)
+
+        #mcomecando a transmissao:
+
         while(start is False):
-            print("HandShake ERROR, retrying")
-            start = handshake()
+            type_1()
+            time.sleep(5)
+            start = handler(i)[0]
+            if not start:
+                print("HandShake ERROR, retrying")
             
+        #TODO temos mais timers, temos que colocar eles nos lugares corretos
+        t_i = time.time()
+        timer_1 = 0
+        timer_2 = 0
         if start:
             acabou = False
             i = 0
             while not acabou:
                 if i < size_of_dog:
+                    timer_1 = time.time() - t_i
+                    timer_2 = time.time() - t_i
 
-                    if i > 0:
-                        help  = acknowledge()
-                    else: 
-                        help = True
+                    next_pkg, ultimo_pacote   = handler(i)
 
-                    if isinstance(help, str):
-                        i -= 1
-
-                    if help:
-                        send_img(i)
+                    if not next_pkg:
+                        i = ultimo_pacote
+                    if next_pkg:
+                        type_3(i)
                         i += 1
-                        time.sleep(0.1)
 
-                    else: 
-                        print("waiting for Acknowledge...")
+                    if timer_1 > 5:
+                        type_3(i)
+                        t_i = 0
+
+                    if timer_2 > 20:
+                        type_5()
 
                 else: acabou = True
 
