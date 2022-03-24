@@ -14,6 +14,8 @@ from base64 import decode
 from calendar import c
 from http import client, server
 from operator import index, indexOf
+
+import pkg_resources
 from enlace_Server import *
 import time
 import numpy as np
@@ -46,141 +48,255 @@ def main():
         #seus dados a serem transmitidos são uma lista de bytes a serem transmitidos. Gere esta lista com o 
         #nome de txBuffer. Esla sempre irá armazenar os dados a serem enviados.
 
-        #-----P3-----
+        #-----P4-----
 
-        def acknowledge(b): #boolean
-            #caso tenha dado algo errado, remandar o ultimo pacote
-            if b: 
-                head = [30, 0, 0 ,0 ,0, 0, 0 ,0 ,0, 0]
-            else: 
-                head = [40, 0, 0 ,0 ,0, 0, 0 ,0 ,0, 0]
+        def tipo2():
 
-            eop = [85, 85, 85, 85]
+            head = [2, 0, 0, 0, 0, 0, 0, 0 ,0 ,0, 0] #numero total a ser visto
+            eop = [0xAA, 0xBB, 0xCC, 0xDD]
+
             pacote = head + eop
             txBuffer = pacote
-            time.sleep(0.5)
+
+            time.sleep(0.1)
             com1.sendData(np.asarray(bytes(txBuffer)))
 
-        print("ouvindo:")
+        def tipo4(tipo3):
 
-        #HANDSHAKE
-        txLen = 10
-        time.sleep(0.5)        
-        rxBuffer, nRx = com1.getData(txLen)
-        print("recebeu: {}" .format(rxBuffer))
+            ultimo_pacote = tipo3[7]# numero do pacote aferido
 
-        index = rxBuffer[0]
+            head = [4, 0, 0, 0, 0, 0, 0, ultimo_pacote ,0 ,0, 0]
+            eop = [0xAA, 0xBB, 0xCC, 0xDD]
 
-        n_pacotes = rxBuffer[1]
+            pacote = head + eop
+            txBuffer = pacote
 
-        quantidade_pacotes = rxBuffer[2]
+            time.sleep(0.1)
+            com1.sendData(np.asarray(bytes(txBuffer)))
 
-        tamanho_payload = rxBuffer[3]
+        def tipo5():
+
+            head = [5, 0, 0, 0, 0, 0, 0, 0 ,0 ,0, 0] #numero total a ser visto
+            eop = [0xAA, 0xBB, 0xCC, 0xDD]
+
+            pacote = head + eop
+            txBuffer = pacote
+
+            time.sleep(0.1)
+            com1.sendData(np.asarray(bytes(txBuffer)))
         
-        # print(f"codigo: {index}")
-        # print(f"numero do pacote: {n_pacotes}")
-        # print(f"quantidade de pacotes: {quantidade_pacotes}")
+        def tipo6(numero_pacote):
 
-        txLen = 4
-        rxBuffer, nRx = com1.getData(txLen)
-        #print("EOP: {}" .format(list(rxBuffer)))
+            head = [6, 0, 0, 0, 0, 0, numero_pacote, 0 ,0 ,0, 0] #numero total a ser visto
+            eop = [0xAA, 0xBB, 0xCC, 0xDD]
+
+            pacote = head + eop
+            txBuffer = pacote
+
+            time.sleep(0.1)
+            com1.sendData(np.asarray(bytes(txBuffer)))
+
         
-        if index == 10: # index 10 == handhsake, podemos prosseguir]
-            acknowledge(True)
-            start = True
-        else: 
-            start = False
+        identificador = 10
+        pkg = 0
+        ocioso = True
+        print("ouvindo handshake:")
 
+        while ocioso:
 
+            txLen = 10
+            rxBuffer, nRx = com1.getData(txLen)
 
-        # acknowledge(True)
+            tipo_mensagem = rxBuffer[0]
+            numero_de_pacotes = rxBuffer[3]
 
-        #CONSTRUCAO DA IMAGEM
-        eop_correto = [85, 85, 85, 85]
+            if tipo_mensagem == 1: # ver se é handshake
 
-        if start:
-            lista_imagem = []
-            for i in range(quantidade_pacotes-1):
+                id_mensagem = rxBuffer[6]
 
-                #lendo o HEAD:
+                if id_mensagem == identificador: #ver se é para o server
 
-                txLen = 10
-                time.sleep(0.5)
-                rxBuffer, nRx = com1.getData(txLen)
-                print("recebeu: {}" .format(list(rxBuffer)))
-                #
-
-                index = rxBuffer[0]
-
-                n_pacotes = rxBuffer[1]
-
-                quantidade_pacotes = rxBuffer[2]
-
-                tamanho_payload = rxBuffer[3]
-
-                resto = rxBuffer[3:-1]
-
-                # print(f"codigo: {index}")
-                # print(f"numero do pacote: {n_pacotes}")
-                # print(f"quantidade de pacotes: {quantidade_pacotes}")
-        
-                if i == 0:
-                    n_ultimo_pacote = 0
-
-                if n_pacotes != (n_ultimo_pacote + 1):
-                    print("ERRO no numero do pacote")
-                    acknowledge(False)
-
-                n_ultimo_pacote = n_pacotes
-
-                    # print("tamanho payload: {}" .format(tamanho_payload))
-                    # print(list(rxBuffer))
-
-                    #Montando a imagem
-                txLen = tamanho_payload
-                    #
-
-                time.sleep(0.5)
-                rxBuffer, nRx = com1.getData(txLen)
-                # print(f"tamanho da payload:{len(rxBuffer)}")
-                # print(f"tamanho experado da payload: {txLen}")
-
-                if len(rxBuffer) != txLen:
-                    print("erro no tamanho da payload")
-                    acknowledge(False)
+                    ocioso = False
+                    time.sleep(1)
 
                 else:
-                        #
-                        #le a payload, adiciona a lista_imagem
-                    n_pacotes += 1
-                    lista_imagem.append(rxBuffer)
-                    # print(len(rxBuffer))
-                    # print(rxBuffer)
+                    time.sleep(1)
+            else:
+                time.sleep(1)
+            
+            #eop do handshake
+            txLen = 4
+            rxBuffer, nRx = com1.getData(txLen)
+        
+        #envia a mensagem de tipo 2
+        tipo2()
 
-                    time.sleep(0.5)
-                    rxBuffer, nRx = com1.getData(4)
-                    eop_recebido = rxBuffer
-                    print(f"eop: {list(rxBuffer)}")
+        cont = 1
+        eop = [0xAA, 0xBB, 0xCC, 0xDD]
 
-                    if list(eop_recebido) != eop_correto: #compara a lista elemento a elemento
-                        acknowledge(False)
+        t2 = time.time() #timer2
 
-                    else: acknowledge(True)
+        while cont <= numero_de_pacotes:
+
+            t1 = time.time() #timer1
+
+            print("ouvindo mensagem:")
+
+            txLen = 10
+            rxBuffer, nRx = com1.getData(txLen)
+
+            tipo_mensagem = rxBuffer[0]
+            numero_do_pacote = rxBuffer[4]
+            
+            if tipo_mensagem == 3: #tipo de mensagem certa
+
+                if pkg == numero_do_pacote-1: #verifica o numero de pkg junto com o numero do pacote da mensagem
+                    
+                    #payload
+                    tamanho_payload = rxBuffer[5]
+                    txLen = tamanho_payload
+                    rxBuffer, nRx = com1.getData(txLen)
+
+                    #eop
+                    txLen = 4
+                    rxBuffer, nRx = com1.getData(txLen)
+
+                    eop_mensagem = rxBuffer # pegar os 4 ultimos elementos para matar o eop
+
+                    if eop == eop_mensagem:
+                    
+                        pkg+=1
+
+                        tipo4()
+
+                        cont+=1
+
+                    else:
+                        tipo6(numero_do_pacote)
+                else:
+                    tipo6(numero_do_pacote)
+            else:
+                time.sleep(1)
+
+            if t2 > 20:
+                ocioso == True
+                tipo5()
+                print(':-(')
+                com1.disable()
+
+            if t1 > 2:
+                tipo4()
+                t1 = 0
+
+
+
+        
+        print("Sucesso")
+        print("-------------------------")
+        print("Comunicação encerrada")
+        print("-------------------------")
+        com1.disable()
+
+    except Exception as erro:
+        print("ops! :-\\")
+        print(erro)
+        com1.disable()
+
+
+        
+
+    #so roda o main quando for executado do terminal ... se for chamado dentro de outro modulo nao roda
+if __name__ == "__main__":
+    main()
+        
+
+
+
+
+        
+
+        #-----P3-----
+
+        # #CONSTRUCAO DA IMAGEM
+        # eop_correto = [85, 85, 85, 85]
+
+        # if start:
+        #     lista_imagem = []
+        #     for i in range(quantidade_pacotes-1):
+
+        #         #lendo o HEAD:
+
+        #         txLen = 10
+        #         time.sleep(0.5)
+        #         rxBuffer, nRx = com1.getData(txLen)
+        #         print("recebeu: {}" .format(list(rxBuffer)))
+        #         #
+
+        #         index = rxBuffer[0]
+
+        #         n_pacotes = rxBuffer[1]
+
+        #         quantidade_pacotes = rxBuffer[2]
+
+        #         tamanho_payload = rxBuffer[3]
+
+        #         resto = rxBuffer[3:-1]
+
+        #         # print(f"codigo: {index}")
+        #         # print(f"numero do pacote: {n_pacotes}")
+        #         # print(f"quantidade de pacotes: {quantidade_pacotes}")
+        
+        #         if i == 0:
+        #             n_ultimo_pacote = 0
+
+        #         if n_pacotes != (n_ultimo_pacote + 1):
+        #             print("ERRO no numero do pacote")
+        #             acknowledge(False)
+
+        #         n_ultimo_pacote = n_pacotes
+
+        #             # print("tamanho payload: {}" .format(tamanho_payload))
+        #             # print(list(rxBuffer))
+
+        #             #Montando a imagem
+        #         txLen = tamanho_payload
+        #             #
+
+        #         time.sleep(0.5)
+        #         rxBuffer, nRx = com1.getData(txLen)
+        #         # print(f"tamanho da payload:{len(rxBuffer)}")
+        #         # print(f"tamanho experado da payload: {txLen}")
+
+        #         if len(rxBuffer) != txLen:
+        #             print("erro no tamanho da payload")
+        #             acknowledge(False)
+
+        #         else:
+        #                 #
+        #                 #le a payload, adiciona a lista_imagem
+        #             n_pacotes += 1
+        #             lista_imagem.append(rxBuffer)
+        #             # print(len(rxBuffer))
+        #             # print(rxBuffer)
+
+        #             time.sleep(0.5)
+        #             rxBuffer, nRx = com1.getData(4)
+        #             eop_recebido = rxBuffer
+        #             print(f"eop: {list(rxBuffer)}")
+
+        #             if list(eop_recebido) != eop_correto: #compara a lista elemento a elemento
+        #                 acknowledge(False)
+
+        #             else: acknowledge(True)
                             
 
 
-        imgW = "server/img/copyDog.jpg"
-        f = open(imgW, 'wb')
-        f.write(bytes(lista_imagem))
-        f.close()
-        print("acabou!")
-
-
-            
-
-
+        # imgW = "server/img/copyDog.jpg"
+        # f = open(imgW, 'wb')
+        # f.write(bytes(lista_imagem))
+        # f.close()
+        # print("acabou!")
         
-
 
 
 
@@ -250,19 +366,3 @@ def main():
         # txBuffer = (len(commands_size)).to_bytes(1,byteorder='big')
         # print("mandando {} commandos".format(len(commands_size)))
         # com1.sendData(np.asarray(txBuffer))
-
-        print("-------------------------")
-        print("Comunicação encerrada")
-        com1.disable()
-
-    except Exception as erro:
-        print("ops! :-\\")
-        print(erro)
-        com1.disable()
-
-
-        
-
-    #so roda o main quando for executado do terminal ... se for chamado dentro de outro modulo nao roda
-if __name__ == "__main__":
-    main()
