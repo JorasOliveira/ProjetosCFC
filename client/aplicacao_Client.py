@@ -13,7 +13,6 @@
 from base64 import decode
 from calendar import c
 from http import client, server
-from socketserver import ThreadingUnixDatagramServer
 from sys import byteorder
 from enlace_Client import *
 import time
@@ -95,10 +94,13 @@ def main():
             pacote = handshake  #temporario     
 
             #mandando o HandShake:
+           # print("mandando o handhshake")
             txBuffer = pacote
             #print(f"enviando: {txBuffer}")
             time.sleep(0.1)
             com1.sendData(np.asarray(txBuffer))
+            print("mandando o handhshake")
+            print(f"handhsake: {list(pacote)}")
 
         
         #manda a imagem, monta o pacote baseado no index recebido
@@ -107,18 +109,23 @@ def main():
         def type_3(i):
             #print("sending")
             #variando o tamanho da payload quando chegamos no ultimo pacote
-            try: 
-                h = [3, 0, 0, size_of_dog, i, 114, 0, 0, 0]
+            if i == 1:
+                i = 0
+                k = 1
+            else: k = i  
+            try:
+                h = [3, 0, 0, size_of_dog, k, 114, 0, 0, 0, 0]
                 pacote = bytes(h + list(dog[114*i: 114*(i+1)]) + eop)
 
             #no ultimo pacote, teremos erro de index out of range, dai usamos o except
             except: 
-                size = len(list(dog[114*i: 114*(i+1)]))
-                h = [3, 0, 0, size_of_dog, i, size, 0, 0, 0]
-                pacote = bytes(h + list(dog[114*i: 114*(i+1)]) + eop)
+                size = len(list(dog[114*i: -1]))
+
+                h = [3, 0, 0, size_of_dog, k, size, 0, 0, 0, 0]
+                pacote = bytes(h + list(dog[114*i: -1]) + eop)
 
             txBuffer = pacote
-            print(txBuffer)
+            print(f"enviando dados: {list(txBuffer)}")
             time.sleep(0.1)
             com1.sendData(np.asarray(txBuffer))
         
@@ -137,14 +144,37 @@ def main():
             com1.disable()
 
         def handler(i): #handles o recebimento
-            txLen = 10
-            time.sleep(0.1)
-            rxBuffer, nRx = com1.getData(txLen, 1) #pegando o HEAD, 1 = timer 1, 5 segundos
-            # print(f"head: {list(rxBuffer)}")
+            print("ouvindo o recebimento")
+            #timers: a == timer 1, b == timer 2
+            t_i_1 = time.time()
+            t_i_2 = time.time()
+            timer_1 = 0
+            timer_2 = 0
+            l = 0
+            while l < 10:
+                l = com1.rx.getBufferLen()
+                timer_1 = time.time() - t_i_1
+                timer_2 = time.time() - t_i_2
 
-            codigo = rxBuffer[0]
-            pacote_correto = rxBuffer[6]
-            print(f"codigo: {codigo}")
+                if timer_1 >= 5:
+                    t_i_1 = 0
+                    print("re-enviando o pacote de dados")
+                    type_3(i - 1) #para ser o pacote correto
+                    
+                if timer_2 >= 20:
+                    type_5()
+                
+            #l = 10  
+            if l >= 10:
+                txLen = 10
+                time.sleep(0.1)
+                rxBuffer, nRx = com1.getData(txLen) #pegando o HEAD, 1 = timer 1, 5 segundos
+                #print(f"recebido: {list(rxBuffer)}")
+
+                rxBuffer = list(rxBuffer)
+                codigo = rxBuffer[0]
+                pacote_correto = rxBuffer[6]
+                print(f"codigo: {codigo}")
 
             txLen = 4
             time.sleep(0.1)
@@ -153,47 +183,46 @@ def main():
             print(f"eop: {list(rxBuffer)}")
 
             if codigo == 2:
-                return (True, i)
+                return (True, pacote_correto)
+
             elif codigo == 4:
-                return (True, i)
+                return (True, pacote_correto)
+
+            elif codigo == 5:
+                type_5()
+                
             else:
                 return (False, pacote_correto)
 
         #mcomecando a transmissao:
-
+        start = False
         while(start is False):
             type_1()
-            time.sleep(5)
-            start = handler(i)[0]
-            if not start:
+            time.sleep(5) 
+            start = handler(0)
+            if not start[0]:
                 print("HandShake ERROR, retrying")
-            
-        #TODO temos mais timers, temos que colocar eles nos lugares corretos
-        t_i = time.time()
-        timer_1 = 0
-        timer_2 = 0
+
         if start:
             acabou = False
-            i = 0
+            i = 1
             while not acabou:
-                if i < size_of_dog:
-                    timer_1 = time.time() - t_i
-                    timer_2 = time.time() - t_i
+                if i < size_of_dog + 1:
 
-                    next_pkg, ultimo_pacote   = handler(i)
-
+                    if i > 1:
+                        #bol,     int
+                        next_pkg, ultimo_pacote = handler(i) #que burro, reescreva
+                    else: 
+                        next_pkg = True
+                        ultimo_pacote = 1
+                    
                     if not next_pkg:
                         i = ultimo_pacote
-                    if next_pkg:
+
+                    if next_pkg or i == 0:
                         type_3(i)
                         i += 1
 
-                    if timer_1 > 5:
-                        type_3(i)
-                        t_i = 0
-
-                    if timer_2 > 20:
-                        type_5()
 
                 else: acabou = True
 
