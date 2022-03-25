@@ -50,18 +50,24 @@ def main():
 
         #compondo o head
         '''HEAD: 
-        tipo de mensagem - 1 byte (character)
-        ordem dos pacotes: numero/total - 2 bytes (numero/numero)
-        tamanho da payload - 2bytes (nuemro)
-        stuff - 1 byte (charater?) - ff
-        5 bytes vazios
+        h0 - tipo
+        h1 - 
+        h2 - 
+        h3 - numero total de pacotes
+        h4 - numero do pacote enviado
+        h5 - se tipo == handshake: id, se tipi == dados: tamanho da payload
+        h6 - pacote solicitado para recomeco quadno tem erro no envio
+        h7 - ultimo pacote recebido com sucesso
+        h8 - CRC
+        h9 - CRC
 
         TIPOS DE MENSAGEM:
-        HandShake  - 10
-        Dados      - 20
-        Acknowledge- 30
-        Resend     - 40 
-        FIM        - 50
+        1 - inicio de transmissao, h0 = 1, h1 = identificador do server
+        2 - enviada pelo server, resposta do handhsake
+        3 - dados, contem o numero do ultimo pacote recebido, e o total a ser enviado
+        4 - acknowledge, contem o numero do ultimo pacote recebido
+        5 - timeout, deve finalizar a conecsao
+        6 - erro, deve conter o numero do pacote esperado pelo server, nao importa o problema
         '''
         #carregando a imagem
         imgR = "client/img/dog.jpg"
@@ -73,127 +79,150 @@ def main():
         size_of_dog = int(len(dog)/114) + 1
         print(f"a imagem sera dividida em: {size_of_dog} pacotes")
 
-        eop = [85, 85, 85, 85]
+        eop = [0xAA, 0xBB, 0xCC, 0xDD]
 
-        #le o acknowledge e checa se ta correto:
-        def acknowledge():
-            txLen = 10
+        
+        #TODO
+        #eh o handhsake, enviada pelo client para ver se pode comecar a transmissao
+        #tipo 2 eh a resposta do handshake, eh recebida pelo client
+        def type_1():
+            #lista de ints, cada int sera escrito como um byte quando byte(l)
+            #lista do head
+            l = [1, 0, 0, size_of_dog, 0, 10, 0, 0, 0, 0]       
+            #fazemos uma lista de bytes com a lista de ints, cada byte tem tamanho e posicao igual ao do int equivalente na lista
+            handshake = bytes(l + eop) 
+            pacote = handshake  #temporario     
+
+            #mandando o HandShake:
+           # print("mandando o handhshake")
+            txBuffer = pacote
+            #print(f"enviando: {txBuffer}")
             time.sleep(0.1)
-            rxBuffer, nRx = com1.getData(txLen)
-            #print(f"head: {list(rxBuffer)}")
+            com1.sendData(np.asarray(txBuffer))
+            print("mandando o handhshake")
+            print(f"handhsake: {list(pacote)}")
 
-            if isinstance(rxBuffer, str):
-                print("error timeout")
-                return False
+        
+        #manda a imagem, monta o pacote baseado no index recebido
+        #TODO re-escrever o codigo 
+        #tipo 3 eh a mensagem de dados, o client envia os dados e escuta uma resposta
+        def type_3(i):
+            #print("sending")
+            #variando o tamanho da payload quando chegamos no ultimo pacote
+            if i == 1:
+                i = 0
+                k = 1
+            else: k = i  
+            try:
+                h = [3, 0, 0, size_of_dog, k, 114, 0, 0, 0, 0]
+                pacote = bytes(h + list(dog[114*i: 114*(i+1)]) + eop)
 
-            index = rxBuffer[0]
-            n_pacotes = rxBuffer[1]
-            # print(f"codigo: {index}")
-            # print(f"numero do pacote: {n_pacotes}")
+            #no ultimo pacote, teremos erro de index out of range, dai usamos o except
+            except: 
+                size = len(list(dog[114*i: -1]))
+
+                h = [3, 0, 0, size_of_dog, k, size, 0, 0, 0, 0]
+                pacote = bytes(h + list(dog[114*i: -1]) + eop)
+
+            txBuffer = pacote
+            print(f"enviando dados: {list(txBuffer)}")
+            time.sleep(0.1)
+            com1.sendData(np.asarray(txBuffer))
+        
+        #TODO envia uma mensagem tipo 5, e corta a conecao
+        def type_5():
+            h = [5, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            pacote = bytes(h + eop)
+
+            txBuffer = pacote
+            print(txBuffer)
+            time.sleep(0.1)
+            com1.sendData(np.asarray(txBuffer))
+        
+            print("TIME OUT")
+            print(":(")
+            com1.disable()
+
+        def handler(i): #handles o recebimento
+            print("ouvindo o recebimento")
+            #timers: a == timer 1, b == timer 2
+            t_i_1 = time.time()
+            t_i_2 = time.time()
+            timer_1 = 0
+            timer_2 = 0
+            l = 0
+            while l < 10:
+                l = com1.rx.getBufferLen()
+                timer_1 = time.time() - t_i_1
+                timer_2 = time.time() - t_i_2
+
+                if timer_1 >= 5:
+                    t_i_1 = 0
+                    print("re-enviando o pacote de dados")
+                    type_3(i - 1) #para ser o pacote correto
+                    
+                if timer_2 >= 20:
+                    type_5()
+                
+            #l = 10  
+            if l >= 10:
+                txLen = 10
+                time.sleep(0.1)
+                rxBuffer, nRx = com1.getData(txLen) #pegando o HEAD, 1 = timer 1, 5 segundos
+                #print(f"recebido: {list(rxBuffer)}")
+
+                rxBuffer = list(rxBuffer)
+                codigo = rxBuffer[0]
+                pacote_correto = rxBuffer[6]
+                print(f"codigo: {codigo}")
 
             txLen = 4
             time.sleep(0.1)
             rxBuffer, nRx = com1.getData(txLen)
 
             print(f"eop: {list(rxBuffer)}")
-            if eop != list(rxBuffer):
-                return False
 
-            if index == 30:
-                print("works")
-                #tira o EOP do buffer e retorna
-                return True
+            if codigo == 2:
+                return (True, pacote_correto)
+
+            elif codigo == 4:
+                return (True, pacote_correto)
+
+            elif codigo == 5:
+                type_5()
                 
-                #apenas para testes quando nao tem outro pc
-                # if rxBuffer[0] == 10:
-                #     #tira o EOP do buffer e retorna
-                #     txLen = 4
-                #     rxBuffer, nRx = com1.getData(txLen)
-                #     return True
-
-            elif index == 40:
-                print("data error")
-                return 'f'
-                    #chama a si mesmo e checa o aknowledge, idealmente sempre vai retornar a menos que tenha um loop
-                    #infinito de 40 como resposta :/
-                acknowledge()
-                    #tira o EOP do buffer e retorna
-                txLen = 4
-                rxBuffer, nRx = com1.getData(txLen)
-                return True
-
             else:
-                print("ERROR")
-                #tira o EOP do buffer e retorna
-                return False
+                return (False, pacote_correto)
 
-        #manda a imagem, monta o pacote baseado no index recebido
-        def send_img(i):
-            #print("sending")
-            #variando o tamanho da payload quando chegamos no ultimo pacote
-            try: 
-                h = [20, i+3, size_of_dog, 114, 0, 0, 0, 0, 0, 0]
-                pacote = bytes(h + list(dog[114*i: 114*(i+1)]) + eop)
-
-            #no ultimo pacote, teremos erro de index out of range, dai usamos o except
-            except: 
-                h = [20, i+1, size_of_dog, 114, 0, 0, 0, 0, 0, 0]
-                pacote = bytes(h + list(dog[114*i: -1]) + eop)
-
-            #print(pacote[3])
-            txBuffer = pacote
-            print(txBuffer)
-            time.sleep(0.1)
-            com1.sendData(np.asarray(txBuffer))
-
-
-
-        def handshake():
-            #lista de ints, cada int sera escrito como um byte quando byte(l)
-            #lista do head
-            l = [10, 0, size_of_dog, 0, 0, 0, 0, 0, 0, 0]       
-            #fazemos uma lista de bytes com a lista de ints, cada byte tem tamanho e posicao igual ao do int equivalente na lista
-            handshake = bytes(l + eop) 
-            pacote = handshake  #temporario     
-
-            #mandando o HandShake:
-            txBuffer = pacote
-            #print(f"enviando: {txBuffer}")
-            time.sleep(0.1)
-            com1.sendData(np.asarray(txBuffer))
-
-            if acknowledge():
-                return True
-            else: return False
-        
-
-        #mandando a imagem:
-        start = handshake()
+        #mcomecando a transmissao:
+        start = False
         while(start is False):
-            print("HandShake ERROR, retrying")
-            start = handshake()
-            
+            type_1()
+            time.sleep(5) 
+            start = handler(0)
+            if not start[0]:
+                print("HandShake ERROR, retrying")
+
         if start:
             acabou = False
-            i = 0
+            i = 1
             while not acabou:
-                if i < size_of_dog:
+                if i < size_of_dog + 1:
 
-                    if i > 0:
-                        help  = acknowledge()
+                    if i > 1:
+                        #bol,     int
+                        next_pkg, ultimo_pacote = handler(i) #que burro, reescreva
                     else: 
-                        help = True
+                        next_pkg = True
+                        ultimo_pacote = 1
+                    
+                    if not next_pkg:
+                        i = ultimo_pacote
 
-                    if isinstance(help, str):
-                        i -= 1
-
-                    if help:
-                        send_img(i)
+                    if next_pkg or i == 0:
+                        type_3(i)
                         i += 1
-                        time.sleep(0.1)
 
-                    else: 
-                        print("waiting for Acknowledge...")
 
                 else: acabou = True
 
