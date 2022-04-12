@@ -207,7 +207,7 @@ def main():
             acabou = False
             i = 1
             while not acabou:
-                if i < size_of_dog + 1:
+                if i <= size_of_dog:
 
                     if i > 1:
                         #bol,     int
@@ -224,7 +224,11 @@ def main():
                         i += 1
 
 
-                else: acabou = True
+                else: 
+                    acabou = True
+                    print("Terminou! :)")
+
+            
 
 
 
