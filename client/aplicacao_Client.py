@@ -12,6 +12,8 @@
 
 from base64 import decode
 from calendar import c
+from datetime import datetime
+from email import message
 from http import client, server
 from sys import byteorder
 from enlace_Client import *
@@ -70,6 +72,7 @@ def main():
         6 - erro, deve conter o numero do pacote esperado pelo server, nao importa o problema
         '''
         #carregando a imagem
+
         imgR = "client/img/dog.jpg"
         print("Loading Image: ")
         print(" - {}".format(imgR))
@@ -81,8 +84,21 @@ def main():
 
         eop = [0xAA, 0xBB, 0xCC, 0xDD]
 
-        
-        #TODO
+        def writeLog(head):
+
+            if head[0] == 4:
+                message = str(datetime.now()) + " /" + str(head[0]) + " /" +str(head[5])
+            else: #h3 - numero total de pacotes ; h4 - pacote atual; h5 size; 
+                message = str(datetime.now()) + " /" + str(head[0]) + " /" + str(head[5]) + " /" + str(head[4]) + " /" + str(head[3])
+
+            log = "client/log/Client2.txt"
+            with open(log, 'a') as f:
+                f.write(message)
+                f.write('\n')
+
+
+
+            # return "lol"
         #eh o handhsake, enviada pelo client para ver se pode comecar a transmissao
         #tipo 2 eh a resposta do handshake, eh recebida pelo client
         def type_1():
@@ -99,6 +115,7 @@ def main():
             #print(f"enviando: {txBuffer}")
             time.sleep(0.1)
             com1.sendData(np.asarray(txBuffer))
+            writeLog(l)
             print("mandando o handhshake")
             print(f"handhsake: {list(pacote)}")
 
@@ -123,11 +140,13 @@ def main():
 
                 h = [3, 0, 0, size_of_dog, k, size, 0, 0, 0, 0]
                 pacote = bytes(h + list(dog[114*i: -1]) + eop)
-
+                
+            
             txBuffer = pacote
             print(f"enviando dados: {list(txBuffer)}")
             time.sleep(0.1)
             com1.sendData(np.asarray(txBuffer))
+            writeLog(h)
         
         #TODO envia uma mensagem tipo 5, e corta a conecao
         def type_5():
@@ -138,6 +157,7 @@ def main():
             print(txBuffer)
             time.sleep(0.1)
             com1.sendData(np.asarray(txBuffer))
+            writeLog(h)
         
             print("TIME OUT")
             print(":(")
@@ -175,6 +195,7 @@ def main():
                 codigo = rxBuffer[0]
                 pacote_correto = rxBuffer[6]
                 print(f"codigo: {codigo}")
+                writeLog(rxBuffer)
 
             txLen = 4
             time.sleep(0.1)
@@ -227,6 +248,7 @@ def main():
                 else: 
                     acabou = True
                     print("Terminou! :)")
+                    com1.disable()
 
             
 
