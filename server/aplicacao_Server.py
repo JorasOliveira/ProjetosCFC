@@ -52,7 +52,7 @@ def main():
 
         def tipo2():
 
-            head = [2, 0, 0, 0, 0, 0, 0, 0 ,0 ,0, 0] #numero total a ser visto
+            head = [2, 0, 0, 0, 0, 0, 0, 0 ,0 ,0] #numero total a ser visto
             eop = [0xAA, 0xBB, 0xCC, 0xDD]
 
             pacote = head + eop
@@ -65,7 +65,7 @@ def main():
 
             ultimo_pacote = tipo3[7]# numero do pacote aferido
 
-            head = [4, 0, 0, 0, 0, 0, 0, ultimo_pacote ,0 ,0, 0]
+            head = [4, 0, 0, 0, 0, 0, 0, ultimo_pacote ,0 ,0]
             eop = [0xAA, 0xBB, 0xCC, 0xDD]
 
             pacote = head + eop
@@ -76,7 +76,7 @@ def main():
 
         def tipo5():
 
-            head = [5, 0, 0, 0, 0, 0, 0, 0 ,0 ,0, 0] #numero total a ser visto
+            head = [5, 0, 0, 0, 0, 0, 0, 0 ,0 ,0] #numero total a ser visto
             eop = [0xAA, 0xBB, 0xCC, 0xDD]
 
             pacote = head + eop
@@ -87,7 +87,7 @@ def main():
         
         def tipo6(numero_pacote):
 
-            head = [6, 0, 0, 0, 0, 0, numero_pacote, 0 ,0 ,0, 0] #numero total a ser visto
+            head = [6, 0, 0, 0, 0, 0, numero_pacote, 0 ,0 ,0] #numero total a ser visto
             eop = [0xAA, 0xBB, 0xCC, 0xDD]
 
             pacote = head + eop
@@ -99,20 +99,25 @@ def main():
         
         identificador = 10
         pkg = 0
+        lista_imagem = []
         ocioso = True
-        print("ouvindo handshake:")
 
         while ocioso:
 
+            print("ouvindo handshake:")
+
             txLen = 10
             rxBuffer, nRx = com1.getData(txLen)
+
+            rxBuffer = list(rxBuffer)
+            print(rxBuffer)
 
             tipo_mensagem = rxBuffer[0]
             numero_de_pacotes = rxBuffer[3]
 
             if tipo_mensagem == 1: # ver se é handshake
 
-                id_mensagem = rxBuffer[6]
+                id_mensagem = rxBuffer[5]
 
                 if id_mensagem == identificador: #ver se é para o server
 
@@ -132,21 +137,45 @@ def main():
         tipo2()
 
         cont = 1
-        eop = [0xAA, 0xBB, 0xCC, 0xDD]
+        eop = [170, 187, 204, 221]
 
-        t2 = time.time() #timer2
+        t2_2 = time.time() #timer2
+        t1_2 = time.time() #timer2
+
 
         while cont <= numero_de_pacotes:
 
-            t1 = time.time() #timer1
+            t2_1 = time.time()
+
+            deltat2 = t2_2 - t2_1
+
+            t1_1 = time.time() #timer1
+
+            deltat1 = t1_2 - t1_1
 
             print("ouvindo mensagem:")
 
             txLen = 10
             rxBuffer, nRx = com1.getData(txLen)
+            print('peguei head')
+
+            head_n = list(rxBuffer)
 
             tipo_mensagem = rxBuffer[0]
             numero_do_pacote = rxBuffer[4]
+            print('analisando o head')
+
+            if deltat2 > 20:
+                ocioso == True
+                tipo5()
+                print(':-(')
+                print('encerrando a comunição por tempo')
+                com1.disable()
+
+            if deltat1 > 2:
+                tipo4(rxBuffer)
+                t1 = 0
+                print('pedindo a imagem novamente')
             
             if tipo_mensagem == 3: #tipo de mensagem certa
 
@@ -156,41 +185,47 @@ def main():
                     tamanho_payload = rxBuffer[5]
                     txLen = tamanho_payload
                     rxBuffer, nRx = com1.getData(txLen)
+                    print('peguei payload')
+                    lista_imagem.append(rxBuffer)
 
                     #eop
+                    print('escutando eop')
                     txLen = 4
                     rxBuffer, nRx = com1.getData(txLen)
+                    rxBuffer
+                    print('peguei eop')
 
                     eop_mensagem = rxBuffer # pegar os 4 ultimos elementos para matar o eop
 
-                    if eop == eop_mensagem:
+                    print(list(eop_mensagem))
+                    print(eop)
+
+                    if eop == list(eop_mensagem):
                     
                         pkg+=1
 
-                        tipo4()
+                        tipo4(head_n)
 
                         cont+=1
 
                     else:
                         tipo6(numero_do_pacote)
+                        print('o eop nao bateu')
                 else:
                     tipo6(numero_do_pacote)
+                    print('o numero do pacote nao bateu com o esperado')
             else:
                 time.sleep(1)
 
-            if t2 > 20:
-                ocioso == True
-                tipo5()
-                print(':-(')
-                com1.disable()
-
-            if t1 > 2:
-                tipo4()
-                t1 = 0
 
 
+        imgW = "server/img/copyDog.jpg"
+        f = open(imgW, 'wb')
+        f.write(bytes(lista_imagem))
+        f.close()
+        print("acabou de fazer a imagem!")
 
-        
+
         print("Sucesso")
         print("-------------------------")
         print("Comunicação encerrada")
