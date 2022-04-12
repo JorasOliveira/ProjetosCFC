@@ -20,6 +20,7 @@ from enlace_Server import *
 import time
 import numpy as np
 from random import randint, choice
+from datetime import datetime
 
 # voce deverá descomentar e configurar a porta com através da qual ira fazer comunicaçao
 #   para saber a sua porta, execute no terminal :
@@ -50,6 +51,21 @@ def main():
 
         #-----P4-----
 
+        def log_recebe(tamanho, n_atual, n_total, local):
+            agora = str(datetime.now())
+            string_log = agora + '/recebe' + '/3/' + str(tamanho) + '/' + str(n_atual) + '/' +str(n_total)
+            with open(local, 'a') as f:
+                f.write(string_log)
+                f.write('\n')
+
+        def log_envio(local):
+            agora = str(datetime.now())
+            string_log = agora + '/envio' + '/4' + '/14'
+            with open(local, 'a') as f:
+                f.write(string_log)
+                f.write('\n')
+
+
         def tipo2():
 
             head = [2, 0, 0, 0, 0, 0, 0, 0 ,0 ,0] #numero total a ser visto
@@ -71,6 +87,7 @@ def main():
             pacote = head + eop
             txBuffer = pacote
 
+            # log_envio("server/log/Server1.txt")
             time.sleep(0.1)
             com1.sendData(np.asarray(bytes(txBuffer)))
 
@@ -160,11 +177,14 @@ def main():
             txLen = 10
             rxBuffer, nRx = com1.getData(txLen)
             print('peguei head')
+            
 
             head_n = list(rxBuffer)
 
             tipo_mensagem = rxBuffer[0]
             numero_do_pacote = rxBuffer[4]
+            numero_total = rxBuffer[3]
+
             print('analisando o head')
 
             if deltat2 > 20:
@@ -185,6 +205,8 @@ def main():
                     
                     #payload
                     tamanho_payload = rxBuffer[5]
+                    # log_recebe(tamanho_payload, numero_do_pacote, numero_total, "server/log/Server1.txt")
+
                     txLen = tamanho_payload
                     rxBuffer, nRx = com1.getData(txLen)
                     print('peguei payload')
