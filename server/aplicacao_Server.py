@@ -14,8 +14,8 @@ from base64 import decode
 from calendar import c
 from http import client, server
 from operator import index, indexOf
+from tkinter import Image
 
-import pkg_resources
 from enlace_Server import *
 import time
 import numpy as np
@@ -143,7 +143,9 @@ def main():
         t1_2 = time.time() #timer2
 
 
-        while cont <= numero_de_pacotes:
+        img = b''
+
+        while cont < numero_de_pacotes:
 
             t2_1 = time.time()
 
@@ -186,7 +188,8 @@ def main():
                     txLen = tamanho_payload
                     rxBuffer, nRx = com1.getData(txLen)
                     print('peguei payload')
-                    lista_imagem.append(rxBuffer)
+                    # lista_imagem.append(rxBuffer)
+                    img+=rxBuffer
 
                     #eop
                     print('escutando eop')
@@ -217,16 +220,16 @@ def main():
             else:
                 time.sleep(1)
 
-
+        print('SUCESSO DE ENVIO')
 
         imgW = "server/img/copyDog.jpg"
         f = open(imgW, 'wb')
-        f.write(bytes(lista_imagem))
+        f.write(img)
         f.close()
         print("acabou de fazer a imagem!")
 
 
-        print("Sucesso")
+        print("SUCESSO NA CONSTRUÇÃO DA IMAGEM")
         print("-------------------------")
         print("Comunicação encerrada")
         print("-------------------------")
