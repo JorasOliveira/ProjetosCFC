@@ -13,6 +13,7 @@
 from base64 import decode
 from calendar import c
 from http import client, server
+from itertools import count
 from operator import index, indexOf
 from tkinter import Image
 
@@ -51,16 +52,16 @@ def main():
 
         #-----P4-----
 
-        def log_recebe(tamanho, n_atual, n_total, local):
+        def log_recebe(tipo,tamanho, n_atual, n_total, local):
             agora = str(datetime.now())
-            string_log = agora + '/recebe' + '/3/' + str(tamanho) + '/' + str(n_atual) + '/' +str(n_total)
+            string_log = agora + '/recebe/' + str(tipo) + '/' + str(tamanho) + '/' + str(n_atual) + '/' +str(n_total)
             with open(local, 'a') as f:
                 f.write(string_log)
                 f.write('\n')
 
-        def log_envio(local):
+        def log_envio(tipo,local):
             agora = str(datetime.now())
-            string_log = agora + '/envio' + '/4' + '/14'
+            string_log = agora + '/envio/' + str(tipo) + '/14'
             with open(local, 'a') as f:
                 f.write(string_log)
                 f.write('\n')
@@ -74,6 +75,7 @@ def main():
             pacote = head + eop
             txBuffer = pacote
 
+            log_envio(2,"server/log/Server5.txt")
             time.sleep(0.1)
             com1.sendData(np.asarray(bytes(txBuffer)))
 
@@ -87,7 +89,7 @@ def main():
             pacote = head + eop
             txBuffer = pacote
 
-            # log_envio("server/log/Server1.txt")
+            log_envio(4,"server/log/Server5.txt")
             time.sleep(0.1)
             com1.sendData(np.asarray(bytes(txBuffer)))
 
@@ -99,6 +101,7 @@ def main():
             pacote = head + eop
             txBuffer = pacote
 
+            log_envio(5,"server/log/Server5.txt")
             time.sleep(0.1)
             com1.sendData(np.asarray(bytes(txBuffer)))
         
@@ -110,12 +113,13 @@ def main():
             pacote = head + eop
             txBuffer = pacote
 
+            log_envio(6,"server/log/Server5.txt")
             time.sleep(0.1)
             com1.sendData(np.asarray(bytes(txBuffer)))
 
         
         identificador = 10
-        pkg = 0
+        pkg = 1
         lista_imagem = []
         ocioso = True
 
@@ -153,61 +157,75 @@ def main():
         #envia a mensagem de tipo 2
         tipo2()
 
+        time.sleep(5)
+
         cont = 1
         eop = [170, 187, 204, 221]
-
-        t2_2 = time.time() #timer2
-        t1_2 = time.time() #timer2
 
 
         img = b''
 
-        while cont < numero_de_pacotes:
+        while cont <= numero_de_pacotes:
 
-            t2_1 = time.time()
+            l = 0
 
-            deltat2 = t2_2 - t2_1
-
-            t1_1 = time.time() #timer1
-
-            deltat1 = t1_2 - t1_1
+            ti_1 = time.time() 
+            ti_2 = time.time()
+            timer_1 = 0
+            timer_2 = 0
 
             print("ouvindo mensagem:")
 
-            txLen = 10
-            rxBuffer, nRx = com1.getData(txLen)
-            print('peguei head')
+            while l < 10:
+                l = com1.rx.getBufferLen()
+
+                timer_1 = time.time()-ti_1
+                timer_2 = time.time()-ti_2
+
+                # print(timer_2)
+
+                if timer_2 >= 20:
+                    ocioso == True
+                    tipo5()
+                    print(':-(')
+                    print('encerrando a comunição por tempo')
+                    com1.disable()
+                    exit()
+
+                if timer_1 >= 2:
+                    tipo4(head)
+                    timer_1 = 0
+                    ti_1 = time.time()
+                    print('pedindo a imagem novamente')
+
+            if l >= 10:
+                txLen = 10
+                rxBuffer, nRx = com1.getData(txLen)
+                head = rxBuffer
+                print('peguei head')
             
 
             head_n = list(rxBuffer)
-
+            print(head_n)
+            
             tipo_mensagem = rxBuffer[0]
             numero_do_pacote = rxBuffer[4]
             numero_total = rxBuffer[3]
+            tamanho_payload = rxBuffer[5]
 
             print('analisando o head')
 
-            if deltat2 > 20:
-                ocioso == True
-                tipo5()
-                print(':-(')
-                print('encerrando a comunição por tempo')
-                com1.disable()
+            time.sleep(1)
 
-            if deltat1 > 2:
-                tipo4(rxBuffer)
-                t1 = 0
-                print('pedindo a imagem novamente')
-            
             if tipo_mensagem == 3: #tipo de mensagem certa
-
-                if pkg == numero_do_pacote-1: #verifica o numero de pkg junto com o numero do pacote da mensagem
+                    
+                if pkg == numero_do_pacote: #verifica o numero de pkg junto com o numero do pacote da mensagem
                     
                     #payload
-                    tamanho_payload = rxBuffer[5]
-                    # log_recebe(tamanho_payload, numero_do_pacote, numero_total, "server/log/Server1.txt")
+                    log_recebe(tipo_mensagem,tamanho_payload, numero_do_pacote, numero_total, "server/log/Server5.txt")
 
                     txLen = tamanho_payload
+                    time.sleep(0.1)
                     rxBuffer, nRx = com1.getData(txLen)
                     print('peguei payload')
                     # lista_imagem.append(rxBuffer)
@@ -216,8 +234,8 @@ def main():
                     #eop
                     print('escutando eop')
                     txLen = 4
+                    time.sleep(0.1)
                     rxBuffer, nRx = com1.getData(txLen)
-                    rxBuffer
                     print('peguei eop')
 
                     eop_mensagem = rxBuffer # pegar os 4 ultimos elementos para matar o eop
@@ -226,6 +244,8 @@ def main():
                     print(eop)
 
                     if eop == list(eop_mensagem):
+
+                        print('mais um')
                     
                         pkg+=1
 
@@ -234,12 +254,37 @@ def main():
                         cont+=1
 
                     else:
-                        tipo6(numero_do_pacote)
+                        tipo6(pkg)
+                        tamanho_payload = rxBuffer[5]
+                        log_recebe(tipo_mensagem,tamanho_payload, numero_do_pacote, numero_total, "server/log/Server5.txt")
+
+                        txLen = tamanho_payload
+                        time.sleep(0.1)
+                        rxBuffer, nRx = com1.getData(txLen)
+
+                        txLen = 4
+                        time.sleep(0.1)
+                        rxBuffer, nRx = com1.getData(txLen)
+
                         print('o eop nao bateu')
+                        print('tirando do buffer')
                 else:
-                    tipo6(numero_do_pacote)
+                    tipo6(pkg)
+                    tamanho_payload = rxBuffer[5]
+                    log_recebe(tipo_mensagem,tamanho_payload, numero_do_pacote, numero_total, "server/log/Server5.txt")
+
+                    txLen = tamanho_payload
+                    time.sleep(0.1)
+                    rxBuffer, nRx = com1.getData(txLen)
+
+                    txLen = 4
+                    time.sleep(0.1)
+                    rxBuffer, nRx = com1.getData(txLen)
+
                     print('o numero do pacote nao bateu com o esperado')
+                    print('tirando do buffer')
             else:
+                log_recebe(tipo_mensagem,tamanho_payload, numero_do_pacote, numero_total, "server/log/Server5.txt")
                 time.sleep(1)
 
         print('SUCESSO DE ENVIO')
