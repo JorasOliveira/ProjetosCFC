@@ -79,19 +79,24 @@ def main():
         dog = open(imgR, 'rb').read()
 
         print(f"a imagem tem  tamanho: {len(dog)}")
-        size_of_dog = int(len(dog)/114) + 1
+        size_of_dog = int(len(dog)/114)
         print(f"a imagem sera dividida em: {size_of_dog} pacotes")
+
 
         eop = [0xAA, 0xBB, 0xCC, 0xDD]
 
         def writeLog(head):
 
             if head[0] == 4:
-                message = str(datetime.now()) + " /" + str(head[0]) + " /" +str(head[5])
-            else: #h3 - numero total de pacotes ; h4 - pacote atual; h5 size; 
-                message = str(datetime.now()) + " /" + str(head[0]) + " /" + str(head[5]) + " /" + str(head[4]) + " /" + str(head[3])
+                message = str(datetime.now()) + " / recebimento /" + str(head[0]) + " /" +str(head[5])
+            
+            elif head[0] != 3 and head[0] != 1: #h3 - numero total de pacotes ; h4 - pacote atual; h5 size; 
+                message = str(datetime.now()) + " / recebimento /" + str(head[0]) + " /" + str(head[5]) + " /" + str(head[4]) + " /" + str(head[3])
 
-            log = "client/log/Client2.txt"
+            else: #h3 - numero total de pacotes ; h4 - pacote atual; h5 size; 
+                message = str(datetime.now()) + " / envio /" + str(head[0]) + " /" + str(head[5]) + " /" + str(head[4]) + " /" + str(head[3])
+
+            log = "client/log/Client5.txt"
             with open(log, 'a') as f:
                 f.write(message)
                 f.write('\n')
@@ -126,22 +131,20 @@ def main():
         def type_3(i):
             #print("sending")
             #variando o tamanho da payload quando chegamos no ultimo pacote
-            if i == 1:
-                i = 0
-                k = 1
-            else: k = i  
-            try:
-                h = [3, 0, 0, size_of_dog, k, 114, 0, 0, 0, 0]
-                pacote = bytes(h + list(dog[114*i: 114*(i+1)]) + eop)
-
-            #no ultimo pacote, teremos erro de index out of range, dai usamos o except
-            except: 
-                size = len(list(dog[114*i: -1]))
-
-                h = [3, 0, 0, size_of_dog, k, size, 0, 0, 0, 0]
-                pacote = bytes(h + list(dog[114*i: -1]) + eop)
-                
             
+
+            if i < 10:
+                h = [3, 0, 0, size_of_dog, i, 114, 0, 0, 0, 0]
+                pacote = bytes(h + list(dog[114*(i): 114*(i + 1)]) + eop)
+
+            else: 
+                print("ultimo pacote!!")
+                size = len(list(dog[114*i: ]))
+                print(size)
+                h = [3, 0, 0, size_of_dog, i, size, 0, 0, 0, 0]
+                pacote = bytes(h + list(dog[114*(i):]) + eop)
+                
+
             txBuffer = pacote
             print(f"enviando dados: {list(txBuffer)}")
             time.sleep(0.1)
@@ -162,6 +165,7 @@ def main():
             print("TIME OUT")
             print(":(")
             com1.disable()
+            exit()
 
         def handler(i): #handles o recebimento
             print("ouvindo o recebimento")
@@ -171,17 +175,21 @@ def main():
             timer_1 = 0
             timer_2 = 0
             l = 0
-            while l < 10:
+            while l < 10: #l = len do buffer
                 l = com1.rx.getBufferLen()
                 timer_1 = time.time() - t_i_1
                 timer_2 = time.time() - t_i_2
 
                 if timer_1 >= 5:
-                    t_i_1 = 0
+                    timer_1 = 0
+                    t_i_1 = time.time()
                     print("re-enviando o pacote de dados")
-                    type_3(i - 1) #para ser o pacote correto
+                    if i == 0:
+                        type_1()    
+                    else:
+                        type_3(i - 1) #para ser o pacote correto
                     
-                if timer_2 >= 20:
+                elif timer_2 >= 20:
                     type_5()
                 
             #l = 10  
@@ -195,6 +203,7 @@ def main():
                 codigo = rxBuffer[0]
                 pacote_correto = rxBuffer[6]
                 print(f"codigo: {codigo}")
+                print(f"pacote correto: {pacote_correto}")
                 writeLog(rxBuffer)
 
             txLen = 4
@@ -213,9 +222,10 @@ def main():
                 type_5()
                 
             else:
-                return (False, pacote_correto)
+                print(f"pacote correto: {pacote_correto}")
+                return (False, pacote_correto )
 
-        #mcomecando a transmissao:
+        #comecando a transmissao:
         start = False
         while(start is False):
             type_1()
@@ -227,23 +237,24 @@ def main():
         if start:
             acabou = False
             i = 1
+            error = False
             while not acabou:
                 if i <= size_of_dog:
 
                     if i > 1:
-                        #bol,     int
-                        next_pkg, ultimo_pacote = handler(i) #que burro, reescreva
+                        next_pkg, ultimo_pacote = handler(i)
                     else: 
                         next_pkg = True
                         ultimo_pacote = 1
                     
                     if not next_pkg:
                         i = ultimo_pacote
+                        type_3(i)
+                        i+=1
 
-                    if next_pkg or i == 0:
+                    if next_pkg or i == 0: 
                         type_3(i)
                         i += 1
-
 
                 else: 
                     acabou = True
