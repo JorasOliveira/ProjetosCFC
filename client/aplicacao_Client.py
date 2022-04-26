@@ -20,6 +20,9 @@ from enlace_Client import *
 import time
 import numpy as np
 from random import randint, choice
+from crccheck.crc import Crc16
+from crccheck.checksum import Checksum16, ChecksumXor16
+
 # voce deverá descomentar e configurar a porta com através da qual ira fazer comunicaçao
 #   para saber a sua porta, execute no terminal :
 #   python -m serial.tools.list_ports
@@ -78,6 +81,19 @@ def main():
         print(" - {}".format(imgR))
         dog = open(imgR, 'rb').read()
 
+        payload =  bytearray(dog[114*4 : 114*(5)])
+        crc = Crc16().calc(payload)
+        crc = bin(crc)
+        crc1 = crc[2:10]
+        crc2 = crc[10:]
+        print(f"CRC: {crc}")
+        crc3 = crc1 + crc2
+        print(f"crc3: {crc3}")
+        # crc1 = str(crc)
+
+        # h = bytes([3, 0, 0, 99, 1, 114, 0, 0, crc1, 0])
+        # print(f"head com CRC: {h}")
+
         print(f"a imagem tem  tamanho: {len(dog)}")
         size_of_dog = int(len(dog)/114)
         print(f"a imagem sera dividida em: {size_of_dog} pacotes")
@@ -134,15 +150,27 @@ def main():
             
 
             if i < 10:
-                h = [3, 0, 0, size_of_dog, i, 114, 0, 0, 0, 0]
-                pacote = bytes(h + list(dog[114*(i): 114*(i + 1)]) + eop)
+                
+                payload =  dog[114*(i): 114*(i + 1)]
+
+                crc = Crc16().calc(payload)
+                crc = bin(crc)
+                crc_1 = crc[2:10]
+                crc_2 = crc[10:]
+                h = [3, 0, 0, size_of_dog, i, 114, 0, 0, crc_1, crc_2]
+                pacote = bytes(h + list(payload) + eop)
 
             else: 
                 print("ultimo pacote!!")
                 size = len(list(dog[114*i: ]))
-                print(size)
-                h = [3, 0, 0, size_of_dog, i, size, 0, 0, 0, 0]
-                pacote = bytes(h + list(dog[114*(i):]) + eop)
+                
+                payload =  dog[114*(i):]
+                crc = Crc16().calc(payload)
+                crc = bin(crc)
+                crc_1 = crc[2:10]
+                crc_2 = crc[10:]
+                h = [3, 0, 0, size_of_dog, i, size, 0, 0, crc_1, crc_2]
+                pacote = bytes(h + list(payload) + eop)
                 
 
             txBuffer = pacote
