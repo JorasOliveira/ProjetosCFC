@@ -16,6 +16,7 @@ from http import client, server
 from itertools import count
 from operator import index, indexOf
 from tkinter import Image
+from crccheck.crc import Crc16
 
 from enlace_Server import *
 import time
@@ -75,13 +76,11 @@ def main():
             pacote = head + eop
             txBuffer = pacote
 
-            log_envio(2,"server/log/Server5.txt")
+            # log_envio(2,"server/log/Server5.txt")
             time.sleep(0.1)
             com1.sendData(np.asarray(bytes(txBuffer)))
 
-        def tipo4(tipo3):
-
-            ultimo_pacote = tipo3[7]# numero do pacote aferido
+        def tipo4(ultimo_pacote):
 
             head = [4, 0, 0, 0, 0, 0, 0, ultimo_pacote ,0 ,0]
             eop = [0xAA, 0xBB, 0xCC, 0xDD]
@@ -89,7 +88,7 @@ def main():
             pacote = head + eop
             txBuffer = pacote
 
-            log_envio(4,"server/log/Server5.txt")
+            # log_envio(4,"server/log/Server5.txt")
             time.sleep(0.1)
             com1.sendData(np.asarray(bytes(txBuffer)))
 
@@ -101,7 +100,7 @@ def main():
             pacote = head + eop
             txBuffer = pacote
 
-            log_envio(5,"server/log/Server5.txt")
+            # log_envio(5,"server/log/Server5.txt")
             time.sleep(0.1)
             com1.sendData(np.asarray(bytes(txBuffer)))
         
@@ -113,7 +112,7 @@ def main():
             pacote = head + eop
             txBuffer = pacote
 
-            log_envio(6,"server/log/Server5.txt")
+            # log_envio(6,"server/log/Server5.txt")
             time.sleep(0.1)
             com1.sendData(np.asarray(bytes(txBuffer)))
 
@@ -193,7 +192,7 @@ def main():
                     exit()
 
                 if timer_1 >= 2:
-                    tipo4(head)
+                    tipo4(pkg)
                     timer_1 = 0
                     ti_1 = time.time()
                     print('pedindo a imagem novamente')
@@ -205,13 +204,18 @@ def main():
                 print('peguei head')
             
 
-            head_n = list(rxBuffer)
+            head_n = list(head)
+
+            last_pkg = head[7]
             print(head_n)
             
             tipo_mensagem = rxBuffer[0]
             numero_do_pacote = rxBuffer[4]
             numero_total = rxBuffer[3]
             tamanho_payload = rxBuffer[5]
+
+            crc1_check = rxBuffer[8]
+            crc2_check = rxBuffer[9]
 
             print('analisando o head')
 
@@ -222,20 +226,29 @@ def main():
                 if pkg == numero_do_pacote: #verifica o numero de pkg junto com o numero do pacote da mensagem
                     
                     #payload
-                    log_recebe(tipo_mensagem,tamanho_payload, numero_do_pacote, numero_total, "server/log/Server5.txt")
+                    # log_recebe(tipo_mensagem,tamanho_payload, numero_do_pacote, numero_total, "server/log/Server5.txt")
 
                     txLen = tamanho_payload
                     time.sleep(0.1)
                     rxBuffer, nRx = com1.getData(txLen)
                     print('peguei payload')
                     # lista_imagem.append(rxBuffer)
-                    img+=rxBuffer
+
+                    pct_imagem = rxBuffer
+
+                    crc = Crc16().calc(rxBuffer)
+                    crc = int.to_bytes(crc, 2, byteorder='big')
+
+                    crc1_check = int.to_bytes(crc1_check, 1, byteorder='big')
+                    crc2_check = int.to_bytes(crc2_check, 1, byteorder='big')
+                    crc_check = crc1_check+crc2_check
 
                     #eop
                     print('escutando eop')
                     txLen = 4
                     time.sleep(0.1)
                     rxBuffer, nRx = com1.getData(txLen)
+
                     print('peguei eop')
 
                     eop_mensagem = rxBuffer # pegar os 4 ultimos elementos para matar o eop
@@ -243,20 +256,23 @@ def main():
                     print(list(eop_mensagem))
                     print(eop)
 
-                    if eop == list(eop_mensagem):
+                    if eop == list(eop_mensagem) and crc == crc_check:
 
                         print('mais um')
-                    
+
+                        img+=pct_imagem
+                        
                         pkg+=1
-
-                        tipo4(head_n)
-
+                        
+                        tipo4(last_pkg)
+                        
                         cont+=1
+                    
 
                     else:
                         tipo6(pkg)
                         tamanho_payload = rxBuffer[5]
-                        log_recebe(tipo_mensagem,tamanho_payload, numero_do_pacote, numero_total, "server/log/Server5.txt")
+                        # log_recebe(tipo_mensagem,tamanho_payload, numero_do_pacote, numero_total, "server/log/Server5.txt")
 
                         txLen = tamanho_payload
                         time.sleep(0.1)
@@ -271,7 +287,7 @@ def main():
                 else:
                     tipo6(pkg)
                     tamanho_payload = rxBuffer[5]
-                    log_recebe(tipo_mensagem,tamanho_payload, numero_do_pacote, numero_total, "server/log/Server5.txt")
+                    # log_recebe(tipo_mensagem,tamanho_payload, numero_do_pacote, numero_total, "server/log/Server5.txt")
 
                     txLen = tamanho_payload
                     time.sleep(0.1)
@@ -284,7 +300,7 @@ def main():
                     print('o numero do pacote nao bateu com o esperado')
                     print('tirando do buffer')
             else:
-                log_recebe(tipo_mensagem,tamanho_payload, numero_do_pacote, numero_total, "server/log/Server5.txt")
+                # log_recebe(tipo_mensagem,tamanho_payload, numero_do_pacote, numero_total, "server/log/Server5.txt")
                 time.sleep(1)
 
         print('SUCESSO DE ENVIO')
