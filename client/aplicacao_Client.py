@@ -37,7 +37,7 @@ def main():
     try:
         #declaramos um objeto do tipo enlace com o nome "com". Essa é a camada inferior à aplicação. Observe que um parametro
         #para declarar esse objeto é o nome da porta.
-        com1 = enlace('COM4')
+        com1 = enlace('COM7')
         
         # Ativa comunicacao. Inicia os threads e a comunicação seiral 
         com1.enable()
@@ -83,13 +83,18 @@ def main():
 
         payload =  bytearray(dog[114*4 : 114*(5)])
         crc = Crc16().calc(payload)
-        crc = bin(crc)
-        crc1 = crc[2:10]
-        crc2 = crc[10:]
-        print(f"CRC: {crc}")
+        crc = int.to_bytes(crc, 2, byteorder='big')
+
+        crc1 = crc[0]
+        crc2 = crc[1]
+        crc1 = int.to_bytes(crc1, 1, byteorder='big')
+        crc2 = int.to_bytes(crc2, 1, byteorder='big')
         crc3 = crc1 + crc2
-        print(f"crc3: {crc3}")
-        # crc1 = str(crc)
+        # print(f"crc1: {int.to_bytes(crc1, 1, byteorder='big')}")
+        # print(f"crc1: {int.to_bytes(crc2, 1, byteorder='big')}")
+        print(f"CRC3: {crc3 == crc}")
+        # crc3 = crc1 + crc2
+        # print(f"crc3: {crc3}")
 
         # h = bytes([3, 0, 0, 99, 1, 114, 0, 0, crc1, 0])
         # print(f"head com CRC: {h}")
@@ -150,15 +155,17 @@ def main():
             
 
             if i < 10:
-                
                 payload =  dog[114*(i): 114*(i + 1)]
 
                 crc = Crc16().calc(payload)
                 crc = bin(crc)
                 crc_1 = crc[2:10]
                 crc_2 = crc[10:]
-                h = [3, 0, 0, size_of_dog, i, 114, 0, 0, crc_1, crc_2]
+                print(f"crc1: {np.dtype(crc_1)}")
+                print(f"crc2: {crc_2}")
+                h = [3, 0, 0, size_of_dog, i, 114, 0, 0, crc, crc]
                 pacote = bytes(h + list(payload) + eop)
+                print(165)
 
             else: 
                 print("ultimo pacote!!")
@@ -239,8 +246,10 @@ def main():
             rxBuffer, nRx = com1.getData(txLen)
 
             print(f"eop: {list(rxBuffer)}")
+            print(f"codigo: {codigo}")
 
             if codigo == 2:
+            
                 return (True, pacote_correto)
 
             elif codigo == 4:
@@ -263,24 +272,32 @@ def main():
                 print("HandShake ERROR, retrying")
 
         if start:
+            print(267)
             acabou = False
             i = 1
             error = False
+            
             while not acabou:
+                
                 if i <= size_of_dog:
 
                     if i > 1:
+                        
                         next_pkg, ultimo_pacote = handler(i)
+                        
+
                     else: 
+                        print(282)
                         next_pkg = True
                         ultimo_pacote = 1
                     
                     if not next_pkg:
+                        
                         i = ultimo_pacote
                         type_3(i)
                         i+=1
 
-                    if next_pkg or i == 0: 
+                    if next_pkg: 
                         type_3(i)
                         i += 1
 
