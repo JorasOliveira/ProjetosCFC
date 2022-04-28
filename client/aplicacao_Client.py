@@ -81,18 +81,18 @@ def main():
         print(" - {}".format(imgR))
         dog = open(imgR, 'rb').read()
 
-        payload =  bytearray(dog[114*4 : 114*(5)])
-        crc = Crc16().calc(payload)
-        crc = int.to_bytes(crc, 2, byteorder='big')
+        # payload =  bytearray(dog[114*4 : 114*(5)])
+        # crc = Crc16().calc(payload)
+        # crc = int.to_bytes(crc, 2, byteorder='big')
 
-        crc1 = crc[0]
-        crc2 = crc[1]
-        crc1 = int.to_bytes(crc1, 1, byteorder='big')
-        crc2 = int.to_bytes(crc2, 1, byteorder='big')
-        crc3 = crc1 + crc2
+        # crc1 = crc[0]
+        # crc2 = crc[1]
+        # crc1 = int.to_bytes(crc1, 1, byteorder='big')
+        # crc2 = int.to_bytes(crc2, 1, byteorder='big')
+        # crc3 = crc1 + crc2
         # print(f"crc1: {int.to_bytes(crc1, 1, byteorder='big')}")
         # print(f"crc1: {int.to_bytes(crc2, 1, byteorder='big')}")
-        print(f"CRC3: {crc3 == crc}")
+        #print(f"CRC3: {crc3 == crc}")
         # crc3 = crc1 + crc2
         # print(f"crc3: {crc3}")
 
@@ -158,25 +158,25 @@ def main():
                 payload =  dog[114*(i): 114*(i + 1)]
 
                 crc = Crc16().calc(payload)
-                crc = bin(crc)
-                crc_1 = crc[2:10]
-                crc_2 = crc[10:]
-                print(f"crc1: {np.dtype(crc_1)}")
-                print(f"crc2: {crc_2}")
-                h = [3, 0, 0, size_of_dog, i, 114, 0, 0, crc, crc]
+                crc = int.to_bytes(crc, 2, byteorder='big')
+                crc1 = crc[0]
+                crc2 = crc[1]
+                
+                h = [3, 0, 0, size_of_dog, i, 114, 0, 0, crc1, crc2]
                 pacote = bytes(h + list(payload) + eop)
-                print(165)
 
             else: 
                 print("ultimo pacote!!")
                 size = len(list(dog[114*i: ]))
                 
                 payload =  dog[114*(i):]
+
                 crc = Crc16().calc(payload)
-                crc = bin(crc)
-                crc_1 = crc[2:10]
-                crc_2 = crc[10:]
-                h = [3, 0, 0, size_of_dog, i, size, 0, 0, crc_1, crc_2]
+                crc = int.to_bytes(crc, 2, byteorder='big')
+                crc1 = crc[0]
+                crc2 = crc[1]
+                
+                h = [3, 0, 0, size_of_dog, i, size, 0, 0, crc1, crc2]
                 pacote = bytes(h + list(payload) + eop)
                 
 
@@ -272,7 +272,6 @@ def main():
                 print("HandShake ERROR, retrying")
 
         if start:
-            print(267)
             acabou = False
             i = 1
             error = False
@@ -287,7 +286,6 @@ def main():
                         
 
                     else: 
-                        print(282)
                         next_pkg = True
                         ultimo_pacote = 1
                     
